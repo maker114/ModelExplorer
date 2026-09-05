@@ -614,7 +614,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 2.1.2"
+              <TextBlock Text="V 2.2.0"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -1045,9 +1045,24 @@
               <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0"
-                       Text="选中模型"
-                       Style="{StaticResource SectionTitleStyle}" />
+            <Grid Grid.Row="0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <TextBlock Text="选中模型"
+                         Style="{StaticResource SectionTitleStyle}"
+                         VerticalAlignment="Center" />
+              <Button x:Name="RenameButton"
+                      Grid.Column="1"
+                      Content="重命名"
+                      Style="{StaticResource SecondaryButtonStyle}"
+                      Padding="10,5"
+                      FontSize="10"
+                      Margin="10,0,0,0"
+                      IsEnabled="False"
+                      Click="Rename_Click" />
+            </Grid>
             <TextBlock x:Name="DetailName"
                        Grid.Row="1"
                        Text="未选择"

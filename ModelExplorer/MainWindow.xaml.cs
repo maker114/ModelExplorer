@@ -22,6 +22,7 @@ namespace ModelExplorer
         private AppConfig _config;
         private bool _searchPlaceholder;
         private bool _settingsOpening;
+        private bool _renameOpening;
         private readonly HashSet<Expander> _animatingExpanders = new HashSet<Expander>();
 
         public MainWindow()
@@ -402,6 +403,7 @@ namespace ModelExplorer
                 DetailName.Text = "未选择";
                 DetailMeta.Text = "";
                 ExportButton.IsEnabled = false;
+                RenameButton.IsEnabled = false;
                 return;
             }
 
@@ -424,6 +426,83 @@ namespace ModelExplorer
             UiAnimation.Pulse(DetailName);
             UiAnimation.Pulse(DetailMeta);
             ExportButton.IsEnabled = selected.Kind != ModelKind.Stl;
+            RenameButton.IsEnabled = true;
+        }
+
+        private void Rename_Click(object sender, RoutedEventArgs e)
+        {
+            if (_renameOpening)
+            {
+                return;
+            }
+
+            ModelFile selected = GetSelectedModel();
+            if (selected == null)
+            {
+                return;
+            }
+
+            _renameOpening = true;
+            DispatcherTimer timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(220)
+            };
+            timer.Tick += delegate
+            {
+                timer.Stop();
+                _renameOpening = false;
+                ShowRenameDialog(selected);
+            };
+            timer.Start();
+        }
+
+        private void ShowRenameDialog(ModelFile selected)
+        {
+            RenameDialog dialog = new RenameDialog(selected.Path);
+            dialog.Owner = this;
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            string sourcePath = selected.Path;
+            string targetPath = dialog.TargetPath;
+            if (string.IsNullOrEmpty(targetPath) ||
+                string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            RenameButton.IsEnabled = false;
+            SetStatusText("正在重命名：" + selected.Name);
+            Log("开始重命名：" + selected.Name);
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    File.Move(sourcePath, targetPath);
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        selected.Name = Path.GetFileName(targetPath);
+                        selected.Path = targetPath;
+                        DetailName.Text = selected.Name;
+                        SetStatusText("重命名完成：" + Path.GetFileName(targetPath));
+                        Log("重命名完成：" + Path.GetFileName(targetPath));
+                        RenameButton.IsEnabled = false;
+                        BeginScan(_config.LastDir);
+                    }));
+                }
+                catch (Exception ex)
+                {
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        SetStatusText("重命名失败");
+                        Log("重命名失败：" + ex.Message);
+                        RenameButton.IsEnabled = GetSelectedModel() != null;
+                    }));
+                }
+            });
         }
 
         private void Export_Click(object sender, RoutedEventArgs e)
