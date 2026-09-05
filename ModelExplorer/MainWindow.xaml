@@ -72,14 +72,14 @@
             <BeginStoryboard>
               <Storyboard>
                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)"
-                                 To="1.025"
+                                 To="1.035"
                                  Duration="0:0:0.09">
                   <DoubleAnimation.EasingFunction>
                     <QuadraticEase EasingMode="EaseOut" />
                   </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)"
-                                 To="1.025"
+                                 To="1.035"
                                  Duration="0:0:0.09">
                   <DoubleAnimation.EasingFunction>
                     <QuadraticEase EasingMode="EaseOut" />
@@ -114,19 +114,22 @@
             <BeginStoryboard>
               <Storyboard>
                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)"
-                                 To="0.97"
-                                 Duration="0:0:0.06">
+                                 To="0.92"
+                                 Duration="0:0:0.07">
                   <DoubleAnimation.EasingFunction>
                     <QuadraticEase EasingMode="EaseOut" />
                   </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
                 <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)"
-                                 To="0.97"
-                                 Duration="0:0:0.06">
+                                 To="0.92"
+                                 Duration="0:0:0.07">
                   <DoubleAnimation.EasingFunction>
                     <QuadraticEase EasingMode="EaseOut" />
                   </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                 To="0.82"
+                                 Duration="0:0:0.07" />
               </Storyboard>
             </BeginStoryboard>
           </Trigger.EnterActions>
@@ -147,10 +150,43 @@
                     <QuadraticEase EasingMode="EaseOut" />
                   </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                 To="1"
+                                 Duration="0:0:0.08" />
               </Storyboard>
             </BeginStoryboard>
           </Trigger.ExitActions>
         </Trigger>
+        <EventTrigger RoutedEvent="Button.Click">
+          <BeginStoryboard>
+            <Storyboard>
+              <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)">
+                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.93" />
+                <EasingDoubleKeyFrame KeyTime="0:0:0.16" Value="1">
+                  <EasingDoubleKeyFrame.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                  </EasingDoubleKeyFrame.EasingFunction>
+                </EasingDoubleKeyFrame>
+              </DoubleAnimationUsingKeyFrames>
+              <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)">
+                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.93" />
+                <EasingDoubleKeyFrame KeyTime="0:0:0.16" Value="1">
+                  <EasingDoubleKeyFrame.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                  </EasingDoubleKeyFrame.EasingFunction>
+                </EasingDoubleKeyFrame>
+              </DoubleAnimationUsingKeyFrames>
+              <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="Opacity">
+                <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0.78" />
+                <EasingDoubleKeyFrame KeyTime="0:0:0.18" Value="1">
+                  <EasingDoubleKeyFrame.EasingFunction>
+                    <QuadraticEase EasingMode="EaseOut" />
+                  </EasingDoubleKeyFrame.EasingFunction>
+                </EasingDoubleKeyFrame>
+              </DoubleAnimationUsingKeyFrames>
+            </Storyboard>
+          </BeginStoryboard>
+        </EventTrigger>
       </Style.Triggers>
     </Style>
 
@@ -578,7 +614,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 2.0.1"
+              <TextBlock Text="V 2.1.0"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -829,7 +865,7 @@
                         Margin="0,10,0,0"
                         PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
             <StackPanel>
-              <Expander IsExpanded="True">
+              <Expander IsExpanded="True" Expanded="Expander_Expanded">
                 <Expander.Header>
                   <Grid Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
@@ -883,7 +919,7 @@
                          SelectionChanged="PartList_SelectionChanged" />
               </Expander>
 
-              <Expander IsExpanded="True">
+              <Expander IsExpanded="True" Expanded="Expander_Expanded">
                 <Expander.Header>
                   <Grid Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>
@@ -937,7 +973,7 @@
                          SelectionChanged="AsmList_SelectionChanged" />
               </Expander>
 
-              <Expander IsExpanded="True">
+              <Expander IsExpanded="True" Expanded="Expander_Expanded">
                 <Expander.Header>
                   <Grid Margin="0,0,0,6">
                     <Grid.ColumnDefinitions>

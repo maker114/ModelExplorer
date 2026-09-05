@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ModelExplorer
 {
@@ -20,6 +21,7 @@ namespace ModelExplorer
         private readonly List<FileMove> _lastMoves = new List<FileMove>();
         private AppConfig _config;
         private bool _searchPlaceholder;
+        private bool _settingsOpening;
 
         public MainWindow()
         {
@@ -288,6 +290,21 @@ namespace ModelExplorer
             }
 
             RefreshModelLists();
+        }
+
+        private void Expander_Expanded(object sender, RoutedEventArgs e)
+        {
+            Expander expander = sender as Expander;
+            if (expander == null)
+            {
+                return;
+            }
+
+            UIElement content = expander.Content as UIElement;
+            if (content != null)
+            {
+                UiAnimation.Refresh(content);
+            }
         }
 
         private void RefreshModelLists()
@@ -827,6 +844,27 @@ namespace ModelExplorer
         }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        {
+            if (_settingsOpening)
+            {
+                return;
+            }
+
+            _settingsOpening = true;
+            DispatcherTimer timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(220)
+            };
+            timer.Tick += delegate
+            {
+                timer.Stop();
+                _settingsOpening = false;
+                OpenSettingsWindow();
+            };
+            timer.Start();
+        }
+
+        private void OpenSettingsWindow()
         {
             SettingsWindow dialog = new SettingsWindow(_config);
             dialog.Owner = this;

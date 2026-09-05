@@ -214,8 +214,8 @@ namespace ModelExplorer
                 "<Trigger Property='IsMouseOver' Value='True'>" +
                 "<Setter TargetName='bd' Property='Background' Value='" + hover + "'/>" +
                 "<Trigger.EnterActions><BeginStoryboard><Storyboard>" +
-                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleX)' To='1.025' Duration='0:0:0.09'/>" +
-                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleY)' To='1.025' Duration='0:0:0.09'/>" +
+                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleX)' To='1.035' Duration='0:0:0.09'/>" +
+                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleY)' To='1.035' Duration='0:0:0.09'/>" +
                 "</Storyboard></BeginStoryboard></Trigger.EnterActions>" +
                 "<Trigger.ExitActions><BeginStoryboard><Storyboard>" +
                 "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleX)' To='1' Duration='0:0:0.12'/>" +
@@ -224,12 +224,14 @@ namespace ModelExplorer
                 "</Trigger>" +
                 "<Trigger Property='IsPressed' Value='True'>" +
                 "<Trigger.EnterActions><BeginStoryboard><Storyboard>" +
-                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleX)' To='0.97' Duration='0:0:0.06'/>" +
-                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleY)' To='0.97' Duration='0:0:0.06'/>" +
+                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleX)' To='0.92' Duration='0:0:0.07'/>" +
+                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleY)' To='0.92' Duration='0:0:0.07'/>" +
+                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='Opacity' To='0.82' Duration='0:0:0.07'/>" +
                 "</Storyboard></BeginStoryboard></Trigger.EnterActions>" +
                 "<Trigger.ExitActions><BeginStoryboard><Storyboard>" +
                 "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleX)' To='1' Duration='0:0:0.08'/>" +
                 "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleY)' To='1' Duration='0:0:0.08'/>" +
+                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='Opacity' To='1' Duration='0:0:0.08'/>" +
                 "</Storyboard></BeginStoryboard></Trigger.ExitActions>" +
                 "</Trigger>" +
                 "<Trigger Property='IsEnabled' Value='False'><Setter TargetName='bd' Property='Opacity' Value='0.45'/></Trigger>" +
@@ -262,10 +264,12 @@ namespace ModelExplorer
                 "<Trigger.EnterActions><BeginStoryboard><Storyboard>" +
                 "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleX)' To='0.93' Duration='0:0:0.05'/>" +
                 "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleY)' To='0.93' Duration='0:0:0.05'/>" +
+                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='Opacity' To='0.78' Duration='0:0:0.05'/>" +
                 "</Storyboard></BeginStoryboard></Trigger.EnterActions>" +
                 "<Trigger.ExitActions><BeginStoryboard><Storyboard>" +
                 "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleX)' To='1' Duration='0:0:0.08'/>" +
                 "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='(UIElement.RenderTransform).(ScaleTransform.ScaleY)' To='1' Duration='0:0:0.08'/>" +
+                "<DoubleAnimation Storyboard.TargetName='bd' Storyboard.TargetProperty='Opacity' To='1' Duration='0:0:0.08'/>" +
                 "</Storyboard></BeginStoryboard></Trigger.ExitActions>" +
                 "</Trigger>" +
                 "</ControlTemplate.Triggers>" +
