@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Web.Script.Serialization;
 
@@ -13,6 +14,7 @@ namespace ModelExplorer
         public string SolidWorksPath { get; set; }
         public string Theme { get; set; }
         public int FontSize { get; set; }
+        public List<string> ProjectNameUnchecked { get; set; }
     }
 
     public static class ConfigService
@@ -41,6 +43,7 @@ namespace ModelExplorer
             config.SolidWorksPath = "";
             config.Theme = "终末地配色";
             config.FontSize = 12;
+            config.ProjectNameUnchecked = new List<string>();
 
             try
             {
@@ -58,6 +61,7 @@ namespace ModelExplorer
                         config.SolidWorksPath = loaded.SolidWorksPath ?? "";
                         config.Theme = loaded.Theme ?? "终末地配色";
                         config.FontSize = loaded.FontSize > 0 ? loaded.FontSize : 12;
+                        config.ProjectNameUnchecked = loaded.ProjectNameUnchecked ?? new List<string>();
                     }
                 }
             }

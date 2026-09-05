@@ -614,7 +614,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 2.2.2"
+              <TextBlock Text="V 2.3.0"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -827,6 +827,11 @@
                           Margin="0,8,0,0"
                           IsEnabled="False"
                           Click="UndoOrganize_Click" />
+                  <Button x:Name="CheckProjectNamesButton"
+                          Content="检查 / 补充工程名"
+                          Style="{StaticResource SecondaryButtonStyle}"
+                          Margin="0,8,0,0"
+                          Click="CheckProjectNames_Click" />
                 </StackPanel>
               </Border>
             </StackPanel>

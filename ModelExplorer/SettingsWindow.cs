@@ -297,7 +297,8 @@ namespace ModelExplorer
                 BambuPath = _bambuPathBox.Text.Trim(),
                 SolidWorksPath = _solidWorksPathBox.Text.Trim(),
                 Theme = (string)_themeCombo.SelectedItem,
-                FontSize = fontSize
+                FontSize = fontSize,
+                ProjectNameUnchecked = _source.ProjectNameUnchecked ?? new System.Collections.Generic.List<string>()
             };
             DialogResult = true;
         }

@@ -23,6 +23,7 @@ namespace ModelExplorer
         private bool _searchPlaceholder;
         private bool _settingsOpening;
         private bool _renameOpening;
+        private bool _checkingProjectNames;
         private readonly HashSet<Expander> _animatingExpanders = new HashSet<Expander>();
 
         public MainWindow()
@@ -953,6 +954,138 @@ namespace ModelExplorer
                     BeginScan(_config.LastDir);
                 }));
             });
+        }
+
+        private void CheckProjectNames_Click(object sender, RoutedEventArgs e)
+        {
+            if (_checkingProjectNames)
+            {
+                return;
+            }
+            if (string.IsNullOrEmpty(_config.LastDir) || !Directory.Exists(_config.LastDir))
+            {
+                Log("请先选择工程目录");
+                return;
+            }
+
+            _checkingProjectNames = true;
+            CheckProjectNamesButton.IsEnabled = false;
+            string root = _config.LastDir;
+            SetStatusText("正在分析工程名...");
+            Log("开始检查工程名");
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                try
+                {
+                    List<ModelFile> files = ProjectScanner.Scan(root);
+                    List<ProjectNameChange> changes = ProjectNamePlanner.BuildPlan(root, files);
+                    Dispatcher.BeginInvoke(new Action(() => OpenProjectNamePlan(changes)));
+                }
+                catch (Exception ex)
+                {
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        FinishProjectNameCheck("工程名检查失败", ex.Message);
+                    }));
+                }
+            });
+        }
+
+        private void OpenProjectNamePlan(List<ProjectNameChange> changes)
+        {
+            if (changes.Count == 0)
+            {
+                FinishProjectNameCheck("工程名检查完成，无需修改", "");
+                return;
+            }
+
+            ProjectNamePlanWindow window = new ProjectNamePlanWindow(
+                changes,
+                _config.ProjectNameUnchecked ?? new List<string>());
+            window.Owner = this;
+            if (window.ShowDialog() != true)
+            {
+                FinishProjectNameCheck("工程名检查已取消", "");
+                return;
+            }
+
+            _config.ProjectNameUnchecked = window.NewUncheckedPaths;
+            ConfigService.Save(_config);
+            ExecuteProjectNameChanges(window.ConfirmedChanges);
+        }
+
+        private void ExecuteProjectNameChanges(List<ProjectNameChange> changes)
+        {
+            if (changes.Count == 0)
+            {
+                FinishProjectNameCheck("没有勾选需要修改的工程名", "");
+                return;
+            }
+
+            SetStatusText("正在执行工程名修改...");
+            Log("执行工程名修改：" + changes.Count + " 项");
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                int applied = 0;
+                List<string> failures = new List<string>();
+                foreach (ProjectNameChange change in changes)
+                {
+                    try
+                    {
+                        if (File.Exists(change.SourcePath) && !File.Exists(change.TargetPath))
+                        {
+                            File.Move(change.SourcePath, change.TargetPath);
+                            applied++;
+                        }
+                        else if (!File.Exists(change.SourcePath))
+                        {
+                            failures.Add(change.OriginalName + "：源文件不存在");
+                        }
+                        else
+                        {
+                            failures.Add(change.OriginalName + "：目标文件已存在");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failures.Add(change.OriginalName + "：" + ex.Message);
+                    }
+                }
+
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    foreach (string failure in failures)
+                    {
+                        Log("工程名修改失败：" + failure);
+                    }
+                    SetStatusText("工程名处理完成：" + applied + " 项");
+                    Log("工程名处理完成：" + applied + " 项" +
+                        (failures.Count > 0 ? "，失败 " + failures.Count + " 项" : ""));
+                    _checkingProjectNames = false;
+                    CheckProjectNamesButton.IsEnabled = true;
+                    if (applied > 0)
+                    {
+                        BeginScan(_config.LastDir);
+                    }
+                }));
+            });
+        }
+
+        private void FinishProjectNameCheck(string message, string detail)
+        {
+            _checkingProjectNames = false;
+            CheckProjectNamesButton.IsEnabled = true;
+            SetStatusText(message);
+            if (string.IsNullOrEmpty(detail))
+            {
+                Log(message);
+            }
+            else
+            {
+                Log(message + "：" + detail);
+            }
         }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
