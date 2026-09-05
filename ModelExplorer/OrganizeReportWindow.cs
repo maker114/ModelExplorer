@@ -44,7 +44,7 @@ namespace ModelExplorer
             Content = UiFactory.CreateWindowChrome(root, theme);
             ((Border)Content).MouseLeftButtonDown += Window_MouseLeftButtonDown;
 
-            Grid header = new Grid { Margin = new Thickness(2, 0, 10, 0) };
+            Grid header = new Grid { Margin = new Thickness(18, 0, 10, 0) };
             TextBlock title = new TextBlock
             {
                 Text = "整理报告",
