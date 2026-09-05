@@ -614,7 +614,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 2.0.1"
+              <TextBlock Text="V 2.1.0"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"

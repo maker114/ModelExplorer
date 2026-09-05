@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace ModelExplorer
 {
@@ -20,6 +21,7 @@ namespace ModelExplorer
         private readonly List<FileMove> _lastMoves = new List<FileMove>();
         private AppConfig _config;
         private bool _searchPlaceholder;
+        private bool _settingsOpening;
 
         public MainWindow()
         {
@@ -842,6 +844,27 @@ namespace ModelExplorer
         }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)
+        {
+            if (_settingsOpening)
+            {
+                return;
+            }
+
+            _settingsOpening = true;
+            DispatcherTimer timer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(220)
+            };
+            timer.Tick += delegate
+            {
+                timer.Stop();
+                _settingsOpening = false;
+                OpenSettingsWindow();
+            };
+            timer.Start();
+        }
+
+        private void OpenSettingsWindow()
         {
             SettingsWindow dialog = new SettingsWindow(_config);
             dialog.Owner = this;
