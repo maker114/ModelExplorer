@@ -322,19 +322,21 @@ namespace ModelExplorer
             _animatingExpanders.Add(expander);
             if (expander.IsExpanded)
             {
-                UiAnimation.AnimateVertical(content, 1, 0, 180, delegate
+                UiAnimation.AnimateOpacity(content, 1, 0, 160, delegate
                 {
                     _animatingExpanders.Remove(expander);
                     expander.IsExpanded = false;
+                    UiAnimation.SetContentOpacity(content, 1);
                 });
                 return;
             }
 
-            UiAnimation.SetVerticalScale(content, 0);
+            UiAnimation.SetContentOpacity(content, 0);
             expander.IsExpanded = true;
-            UiAnimation.AnimateVertical(content, 0, 1, 200, delegate
+            UiAnimation.AnimateOpacity(content, 0, 1, 180, delegate
             {
                 _animatingExpanders.Remove(expander);
+                UiAnimation.SetContentOpacity(content, 1);
             });
         }
 

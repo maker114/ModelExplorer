@@ -106,26 +106,18 @@ namespace ModelExplorer
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleY);
         }
 
-        public static void SetVerticalScale(FrameworkElement element, double scaleY)
+        public static void SetContentOpacity(FrameworkElement element, double opacity)
         {
             if (element == null)
             {
                 return;
             }
 
-            ScaleTransform scale = element.LayoutTransform as ScaleTransform;
-            if (scale == null)
-            {
-                scale = new ScaleTransform(1, 1);
-                element.LayoutTransform = scale;
-            }
-
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            scale.ScaleY = scaleY;
-            element.InvalidateMeasure();
+            element.BeginAnimation(UIElement.OpacityProperty, null);
+            element.Opacity = opacity;
         }
 
-        public static void AnimateVertical(FrameworkElement element, double from, double to, double durationMs, Action completed)
+        public static void AnimateOpacity(FrameworkElement element, double from, double to, double durationMs, Action completed)
         {
             if (element == null)
             {
@@ -136,16 +128,8 @@ namespace ModelExplorer
                 return;
             }
 
-            ScaleTransform scale = element.LayoutTransform as ScaleTransform;
-            if (scale == null)
-            {
-                scale = new ScaleTransform(1, 1);
-                element.LayoutTransform = scale;
-            }
-
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-            scale.ScaleY = from;
-            element.InvalidateMeasure();
+            element.BeginAnimation(UIElement.OpacityProperty, null);
+            element.Opacity = from;
 
             DoubleAnimation animation = new DoubleAnimation(from, to, TimeSpan.FromMilliseconds(durationMs));
             animation.EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut };
@@ -153,7 +137,7 @@ namespace ModelExplorer
             {
                 animation.Completed += delegate { completed(); };
             }
-            scale.BeginAnimation(ScaleTransform.ScaleYProperty, animation);
+            element.BeginAnimation(UIElement.OpacityProperty, animation);
         }
 
         private static DoubleAnimationUsingKeyFrames ScalePulse(double magnitude)
