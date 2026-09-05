@@ -287,7 +287,7 @@ namespace ModelExplorer
             Brush brush = fileType == "零件" ? theme.PartBrush
                 : fileType == "装配体导出" ? theme.AssemblyBrush
                 : theme.StlBrush;
-            TextBlock cell = new TextBlock
+            TextBlock text = new TextBlock
             {
                 Text = fileType ?? "STL",
                 Foreground = brush,
@@ -295,11 +295,32 @@ namespace ModelExplorer
                 FontSize = 11,
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                Margin = new Thickness(4, 0, 4, 0)
+                HorizontalAlignment = HorizontalAlignment.Center
             };
-            Grid.SetColumn(cell, column);
-            grid.Children.Add(cell);
+            Border badge = new Border
+            {
+                Child = text,
+                CornerRadius = new CornerRadius(6),
+                BorderBrush = brush,
+                BorderThickness = new Thickness(1),
+                Background = MakeTypeBackground(brush),
+                Padding = new Thickness(8, 2, 8, 2),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(badge, column);
+            grid.Children.Add(badge);
+        }
+
+        private static Brush MakeTypeBackground(Brush brush)
+        {
+            SolidColorBrush solid = brush as SolidColorBrush;
+            if (solid == null)
+            {
+                return Brushes.Transparent;
+            }
+            Color color = solid.Color;
+            return new SolidColorBrush(Color.FromArgb(0x22, color.R, color.G, color.B));
         }
 
         private void SetChangeSelected(ProjectNameChange change, bool selected)

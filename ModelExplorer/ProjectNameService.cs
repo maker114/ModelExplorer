@@ -42,7 +42,7 @@ namespace ModelExplorer
                 string originalName = Path.GetFileName(sourcePath);
                 string fileType = model.Kind == ModelKind.Part ? "零件" : "STL";
                 bool assemblyExport = model.Kind == ModelKind.Stl &&
-                                      IsAssemblyExportStl(originalName, rootName);
+                                      IsAssemblyExportStl(originalName);
                 int underscoreIndex = originalName.IndexOf('_');
                 string currentProjectName = underscoreIndex > 0
                     ? originalName.Substring(0, underscoreIndex)
@@ -55,8 +55,13 @@ namespace ModelExplorer
                 string category;
                 if (assemblyExport)
                 {
-                    suffix = RemoveAssemblyExportMarker(suffix);
-                    targetName = AddAssemblyExportMarker(rootName + "_" + suffix);
+                    int separator = originalName.LastIndexOf(" - ", StringComparison.Ordinal);
+                    int bodyUnderscore = originalName.IndexOf('_', separator + 3);
+                    string body = bodyUnderscore > separator + 3
+                        ? originalName.Substring(bodyUnderscore + 1)
+                        : originalName.Substring(separator + 3);
+                    body = RemoveAssemblyExportMarker(body);
+                    targetName = AddAssemblyExportMarker(rootName + "_" + body);
                     category = "修改";
                     fileType = "装配体导出";
                 }
@@ -95,6 +100,11 @@ namespace ModelExplorer
 
             changes.Sort(delegate(ProjectNameChange a, ProjectNameChange b)
             {
+                int typeCompare = TypeOrder(a.FileType).CompareTo(TypeOrder(b.FileType));
+                if (typeCompare != 0)
+                {
+                    return typeCompare;
+                }
                 int categoryCompare = string.Compare(a.Category, b.Category, StringComparison.Ordinal);
                 if (categoryCompare != 0)
                 {
@@ -105,21 +115,22 @@ namespace ModelExplorer
             return changes;
         }
 
-        private static bool IsAssemblyExportStl(string fileName, string rootName)
+        private static int TypeOrder(string fileType)
         {
-            int separator = fileName.LastIndexOf(" - ", StringComparison.Ordinal);
-            if (separator <= 0)
+            if (fileType == "零件")
             {
-                return false;
+                return 0;
             }
-            int underscore = fileName.IndexOf('_', separator);
-            if (underscore <= separator + 3)
+            if (fileType == "装配体导出")
             {
-                return false;
+                return 1;
             }
+            return 2;
+        }
 
-            string projectPart = fileName.Substring(separator + 3, underscore - separator - 3);
-            return string.Equals(projectPart, rootName, StringComparison.OrdinalIgnoreCase);
+        private static bool IsAssemblyExportStl(string fileName)
+        {
+            return fileName.IndexOf(" - ", StringComparison.Ordinal) > 0;
         }
 
         private static string RemoveAssemblyExportMarker(string fileName)
