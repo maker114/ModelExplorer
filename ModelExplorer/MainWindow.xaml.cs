@@ -290,6 +290,21 @@ namespace ModelExplorer
             RefreshModelLists();
         }
 
+        private void Expander_Expanded(object sender, RoutedEventArgs e)
+        {
+            Expander expander = sender as Expander;
+            if (expander == null)
+            {
+                return;
+            }
+
+            UIElement content = expander.Content as UIElement;
+            if (content != null)
+            {
+                UiAnimation.Refresh(content);
+            }
+        }
+
         private void RefreshModelLists()
         {
             UiAnimation.Refresh(PartList);
