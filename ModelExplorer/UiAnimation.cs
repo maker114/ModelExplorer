@@ -106,6 +106,56 @@ namespace ModelExplorer
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, scaleY);
         }
 
+        public static void SetVerticalScale(FrameworkElement element, double scaleY)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            ScaleTransform scale = element.LayoutTransform as ScaleTransform;
+            if (scale == null)
+            {
+                scale = new ScaleTransform(1, 1);
+                element.LayoutTransform = scale;
+            }
+
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleY = scaleY;
+            element.InvalidateMeasure();
+        }
+
+        public static void AnimateVertical(FrameworkElement element, double from, double to, double durationMs, Action completed)
+        {
+            if (element == null)
+            {
+                if (completed != null)
+                {
+                    completed();
+                }
+                return;
+            }
+
+            ScaleTransform scale = element.LayoutTransform as ScaleTransform;
+            if (scale == null)
+            {
+                scale = new ScaleTransform(1, 1);
+                element.LayoutTransform = scale;
+            }
+
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, null);
+            scale.ScaleY = from;
+            element.InvalidateMeasure();
+
+            DoubleAnimation animation = new DoubleAnimation(from, to, TimeSpan.FromMilliseconds(durationMs));
+            animation.EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut };
+            if (completed != null)
+            {
+                animation.Completed += delegate { completed(); };
+            }
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, animation);
+        }
+
         private static DoubleAnimationUsingKeyFrames ScalePulse(double magnitude)
         {
             DoubleAnimationUsingKeyFrames animation = new DoubleAnimationUsingKeyFrames();

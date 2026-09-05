@@ -614,7 +614,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 2.1.0"
+              <TextBlock Text="V 2.1.1"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -865,9 +865,9 @@
                         Margin="0,10,0,0"
                         PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
             <StackPanel>
-              <Expander IsExpanded="True" Expanded="Expander_Expanded">
+              <Expander IsExpanded="True">
                 <Expander.Header>
-                  <Grid Margin="0,0,0,6">
+                  <Grid Margin="0,0,0,6" PreviewMouseLeftButtonDown="ExpanderHeader_PreviewMouseLeftButtonDown">
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="26" />
                       <ColumnDefinition Width="Auto" />
@@ -919,9 +919,9 @@
                          SelectionChanged="PartList_SelectionChanged" />
               </Expander>
 
-              <Expander IsExpanded="True" Expanded="Expander_Expanded">
+              <Expander IsExpanded="True">
                 <Expander.Header>
-                  <Grid Margin="0,0,0,6">
+                  <Grid Margin="0,0,0,6" PreviewMouseLeftButtonDown="ExpanderHeader_PreviewMouseLeftButtonDown">
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="26" />
                       <ColumnDefinition Width="Auto" />
@@ -973,9 +973,9 @@
                          SelectionChanged="AsmList_SelectionChanged" />
               </Expander>
 
-              <Expander IsExpanded="True" Expanded="Expander_Expanded">
+              <Expander IsExpanded="True">
                 <Expander.Header>
-                  <Grid Margin="0,0,0,6">
+                  <Grid Margin="0,0,0,6" PreviewMouseLeftButtonDown="ExpanderHeader_PreviewMouseLeftButtonDown">
                     <Grid.ColumnDefinitions>
                       <ColumnDefinition Width="26" />
                       <ColumnDefinition Width="Auto" />

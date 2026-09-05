@@ -22,6 +22,7 @@ namespace ModelExplorer
         private AppConfig _config;
         private bool _searchPlaceholder;
         private bool _settingsOpening;
+        private readonly HashSet<Expander> _animatingExpanders = new HashSet<Expander>();
 
         public MainWindow()
         {
@@ -292,19 +293,49 @@ namespace ModelExplorer
             RefreshModelLists();
         }
 
-        private void Expander_Expanded(object sender, RoutedEventArgs e)
+        private void ExpanderHeader_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            Expander expander = sender as Expander;
+            if (e.ButtonState != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            FrameworkElement header = sender as FrameworkElement;
+            Expander expander = header == null ? null : FindAncestor<Expander>(header);
             if (expander == null)
             {
                 return;
             }
 
-            UIElement content = expander.Content as UIElement;
-            if (content != null)
+            e.Handled = true;
+            AnimateExpander(expander);
+        }
+
+        private void AnimateExpander(Expander expander)
+        {
+            FrameworkElement content = expander.Content as FrameworkElement;
+            if (content == null || _animatingExpanders.Contains(expander))
             {
-                UiAnimation.Refresh(content);
+                return;
             }
+
+            _animatingExpanders.Add(expander);
+            if (expander.IsExpanded)
+            {
+                UiAnimation.AnimateVertical(content, 1, 0, 180, delegate
+                {
+                    _animatingExpanders.Remove(expander);
+                    expander.IsExpanded = false;
+                });
+                return;
+            }
+
+            UiAnimation.SetVerticalScale(content, 0);
+            expander.IsExpanded = true;
+            UiAnimation.AnimateVertical(content, 0, 1, 200, delegate
+            {
+                _animatingExpanders.Remove(expander);
+            });
         }
 
         private void RefreshModelLists()
@@ -952,6 +983,20 @@ namespace ModelExplorer
                     yield return sub;
                 }
             }
+        }
+
+        private static T FindAncestor<T>(DependencyObject current) where T : DependencyObject
+        {
+            while (current != null)
+            {
+                current = VisualTreeHelper.GetParent(current);
+                T result = current as T;
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+            return null;
         }
 
         private void Log(string message)
