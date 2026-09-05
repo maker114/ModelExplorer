@@ -39,7 +39,7 @@ namespace ModelExplorer
             AllowsTransparency = true;
             Background = Brushes.Transparent;
             ResizeMode = ResizeMode.NoResize;
-            Width = 980;
+            Width = 1080;
             Height = 620;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Icon = AppIcon.WindowIcon;
@@ -84,9 +84,42 @@ namespace ModelExplorer
             };
             body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
             string rootName = _changes.Count > 0 ? _changes[0].RootName : "";
+
+            Border rootBanner = new Border
+            {
+                Background = theme.PanelActiveBrush,
+                BorderBrush = theme.AccentBrush,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(9),
+                Padding = new Thickness(12, 8, 12, 8),
+                Margin = new Thickness(2, 0, 2, 8)
+            };
+            StackPanel bannerPanel = new StackPanel();
+            bannerPanel.Children.Add(new TextBlock
+            {
+                Text = "目标工程名",
+                Foreground = theme.MutedBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 12,
+                FontWeight = FontWeights.Bold
+            });
+            bannerPanel.Children.Add(new TextBlock
+            {
+                Text = rootName,
+                Foreground = theme.AccentBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 26,
+                FontWeight = FontWeights.Bold,
+                TextWrapping = TextWrapping.Wrap
+            });
+            rootBanner.Child = bannerPanel;
+            Grid.SetRow(rootBanner, 0);
+            body.Children.Add(rootBanner);
+
             TextBlock description = new TextBlock
             {
                 Text = "工程名取文件名中第一个“_”之前的部分，目标工程名：" + rootName,
@@ -96,7 +129,7 @@ namespace ModelExplorer
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(2, 0, 2, 8)
             };
-            Grid.SetRow(description, 0);
+            Grid.SetRow(description, 1);
             body.Children.Add(description);
 
             _summaryText = new TextBlock
@@ -106,7 +139,7 @@ namespace ModelExplorer
                 FontSize = 11,
                 Margin = new Thickness(2, 0, 2, 8)
             };
-            Grid.SetRow(_summaryText, 1);
+            Grid.SetRow(_summaryText, 2);
             body.Children.Add(_summaryText);
 
             ScrollViewer scroll = new ScrollViewer
@@ -121,7 +154,7 @@ namespace ModelExplorer
                 rows.Children.Add(BuildChangeRow(_changes[i], i, theme));
             }
             scroll.Content = rows;
-            Grid.SetRow(scroll, 2);
+            Grid.SetRow(scroll, 3);
             body.Children.Add(scroll);
             root.Children.Add(body);
             Grid.SetRow(root.Children[root.Children.Count - 1], 1);
@@ -151,9 +184,10 @@ namespace ModelExplorer
             Border border = CreateRowBorder(theme, true);
             Grid grid = CreateRowGrid();
             AddHeaderCell(grid, 0, "勾选");
-            AddHeaderCell(grid, 1, "分类");
-            AddHeaderCell(grid, 2, "当前文件名");
-            AddHeaderCell(grid, 3, "修改后文件名");
+            AddHeaderCell(grid, 1, "文件类型");
+            AddHeaderCell(grid, 2, "分类");
+            AddHeaderCell(grid, 3, "当前文件名");
+            AddHeaderCell(grid, 4, "修改后文件名");
             border.Child = grid;
             return border;
         }
@@ -168,16 +202,18 @@ namespace ModelExplorer
                 IsChecked = change.Selected,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
-                Foreground = theme.TextBrush
+                Foreground = theme.TextBrush,
+                Template = UiFactory.RoundedCheckBoxTemplate()
             };
             checkBox.Checked += delegate { SetChangeSelected(change, true); };
             checkBox.Unchecked += delegate { SetChangeSelected(change, false); };
             Grid.SetColumn(checkBox, 0);
             grid.Children.Add(checkBox);
 
-            AddCell(grid, 1, change.Category, change.Category == "修改");
-            AddCell(grid, 2, change.OriginalName, false, change.SourcePath);
-            AddCell(grid, 3, change.TargetName, true, change.TargetPath);
+            AddTypeCell(grid, 1, change.FileType);
+            AddCell(grid, 2, change.Category, change.Category == "修改");
+            AddCell(grid, 3, change.OriginalName, false, change.SourcePath);
+            AddCell(grid, 4, change.TargetName, true, change.TargetPath);
             border.Child = grid;
             return border;
         }
@@ -186,6 +222,7 @@ namespace ModelExplorer
         {
             Grid grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(52) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(118) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -240,6 +277,27 @@ namespace ModelExplorer
             {
                 ToolTipService.SetToolTip(cell, tooltip);
             }
+            Grid.SetColumn(cell, column);
+            grid.Children.Add(cell);
+        }
+
+        private static void AddTypeCell(Grid grid, int column, string fileType)
+        {
+            AppTheme theme = ThemeManager.Current;
+            Brush brush = fileType == "零件" ? theme.PartBrush
+                : fileType == "装配体导出" ? theme.AssemblyBrush
+                : theme.StlBrush;
+            TextBlock cell = new TextBlock
+            {
+                Text = fileType ?? "STL",
+                Foreground = brush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Margin = new Thickness(4, 0, 4, 0)
+            };
             Grid.SetColumn(cell, column);
             grid.Children.Add(cell);
         }

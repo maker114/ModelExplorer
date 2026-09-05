@@ -404,6 +404,35 @@ namespace ModelExplorer
             return (ControlTemplate)XamlReader.Parse(xaml);
         }
 
+        public static ControlTemplate RoundedCheckBoxTemplate()
+        {
+            string accent = Hex(ThemeManager.Current.Accent);
+            string panel = Hex(ThemeManager.Current.PanelActive);
+            string border = Hex(ThemeManager.Current.Border);
+            string xaml =
+                "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='CheckBox'>" +
+                "<Grid Width='24' Height='24'>" +
+                "<Border x:Name='box' Width='24' Height='24' CornerRadius='7' Background='" + panel + "'" +
+                " BorderBrush='" + border + "' BorderThickness='1'>" +
+                "<Path x:Name='check' Data='M 2,6 L 7,11 L 14,2' Stroke='#151515' StrokeThickness='2.6'" +
+                " StrokeStartLineCap='Round' StrokeEndLineCap='Round' HorizontalAlignment='Center'" +
+                " VerticalAlignment='Center' Width='14' Height='11' Stretch='Fill' Visibility='Collapsed'/>" +
+                "</Border>" +
+                "<ContentPresenter Visibility='Collapsed'/>" +
+                "</Grid>" +
+                "<ControlTemplate.Triggers>" +
+                "<Trigger Property='IsChecked' Value='True'>" +
+                "<Setter TargetName='box' Property='Background' Value='" + accent + "'/>" +
+                "<Setter TargetName='check' Property='Visibility' Value='Visible'/>" +
+                "</Trigger>" +
+                "<Trigger Property='IsMouseOver' Value='True'>" +
+                "<Setter TargetName='box' Property='BorderBrush' Value='" + accent + "'/>" +
+                "</Trigger>" +
+                "</ControlTemplate.Triggers>" +
+                "</ControlTemplate>";
+            return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
         private static string Hex(Color color)
         {
             return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");

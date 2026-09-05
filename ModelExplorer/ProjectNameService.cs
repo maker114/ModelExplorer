@@ -13,6 +13,7 @@ namespace ModelExplorer
         public string RootName { get; set; }
         public string Category { get; set; }
         public bool Selected { get; set; }
+        public string FileType { get; set; }
     }
 
     public static class ProjectNamePlanner
@@ -39,6 +40,9 @@ namespace ModelExplorer
 
                 string sourcePath = model.Path;
                 string originalName = Path.GetFileName(sourcePath);
+                string fileType = model.Kind == ModelKind.Part ? "零件" : "STL";
+                bool assemblyExport = model.Kind == ModelKind.Stl &&
+                                      IsAssemblyExportStl(originalName, rootName);
                 int underscoreIndex = originalName.IndexOf('_');
                 string currentProjectName = underscoreIndex > 0
                     ? originalName.Substring(0, underscoreIndex)
@@ -49,7 +53,14 @@ namespace ModelExplorer
 
                 string targetName;
                 string category;
-                if (currentProjectName.Length == 0)
+                if (assemblyExport)
+                {
+                    suffix = RemoveAssemblyExportMarker(suffix);
+                    targetName = AddAssemblyExportMarker(rootName + "_" + suffix);
+                    category = "修改";
+                    fileType = "装配体导出";
+                }
+                else if (currentProjectName.Length == 0)
                 {
                     targetName = rootName + "_" + originalName;
                     category = "添加名称";
@@ -77,7 +88,8 @@ namespace ModelExplorer
                     TargetName = targetName,
                     RootName = rootName,
                     Category = category,
-                    Selected = true
+                    Selected = true,
+                    FileType = fileType
                 });
             }
 
@@ -91,6 +103,53 @@ namespace ModelExplorer
                 return string.Compare(a.OriginalName, b.OriginalName, StringComparison.OrdinalIgnoreCase);
             });
             return changes;
+        }
+
+        private static bool IsAssemblyExportStl(string fileName, string rootName)
+        {
+            int separator = fileName.LastIndexOf(" - ", StringComparison.Ordinal);
+            if (separator <= 0)
+            {
+                return false;
+            }
+            int underscore = fileName.IndexOf('_', separator);
+            if (underscore <= separator + 3)
+            {
+                return false;
+            }
+
+            string projectPart = fileName.Substring(separator + 3, underscore - separator - 3);
+            return string.Equals(projectPart, rootName, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string RemoveAssemblyExportMarker(string fileName)
+        {
+            string marker = "[装配体导出]";
+            int index = fileName.IndexOf(marker, StringComparison.Ordinal);
+            if (index < 0)
+            {
+                return fileName;
+            }
+
+            string extension = Path.GetExtension(fileName);
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            if (nameWithoutExtension.EndsWith(marker, StringComparison.Ordinal))
+            {
+                return nameWithoutExtension.Substring(0, nameWithoutExtension.Length - marker.Length) + extension;
+            }
+            return fileName.Replace(marker, "");
+        }
+
+        private static string AddAssemblyExportMarker(string fileName)
+        {
+            string marker = "[装配体导出]";
+            string extension = Path.GetExtension(fileName);
+            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            if (nameWithoutExtension.EndsWith(marker, StringComparison.Ordinal))
+            {
+                return fileName;
+            }
+            return nameWithoutExtension + marker + extension;
         }
     }
 }

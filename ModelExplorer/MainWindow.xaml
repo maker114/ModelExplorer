@@ -614,7 +614,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 2.3.0"
+              <TextBlock Text="V 2.3.1"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -832,6 +832,12 @@
                           Style="{StaticResource SecondaryButtonStyle}"
                           Margin="0,8,0,0"
                           Click="CheckProjectNames_Click" />
+                  <Button x:Name="UndoProjectNameButton"
+                          Content="撤销工程名修改"
+                          Style="{StaticResource SecondaryButtonStyle}"
+                          Margin="0,8,0,0"
+                          IsEnabled="False"
+                          Click="UndoProjectName_Click" />
                 </StackPanel>
               </Border>
             </StackPanel>

@@ -19,6 +19,7 @@ namespace ModelExplorer
         private readonly ObservableCollection<ModelFile> _visibleStls;
         private readonly List<ModelFile> _allModels;
         private readonly List<FileMove> _lastMoves = new List<FileMove>();
+        private readonly List<FileMove> _lastProjectNameMoves = new List<FileMove>();
         private AppConfig _config;
         private bool _searchPlaceholder;
         private bool _settingsOpening;
@@ -970,6 +971,7 @@ namespace ModelExplorer
 
             _checkingProjectNames = true;
             CheckProjectNamesButton.IsEnabled = false;
+            UndoProjectNameButton.IsEnabled = false;
             string root = _config.LastDir;
             SetStatusText("正在分析工程名...");
             Log("开始检查工程名");
@@ -1025,11 +1027,14 @@ namespace ModelExplorer
 
             SetStatusText("正在执行工程名修改...");
             Log("执行工程名修改：" + changes.Count + " 项");
+            _lastProjectNameMoves.Clear();
+            UndoProjectNameButton.IsEnabled = false;
 
             ThreadPool.QueueUserWorkItem(delegate
             {
                 int applied = 0;
                 List<string> failures = new List<string>();
+                List<FileMove> appliedMoves = new List<FileMove>();
                 foreach (ProjectNameChange change in changes)
                 {
                     try
@@ -1038,6 +1043,11 @@ namespace ModelExplorer
                         {
                             File.Move(change.SourcePath, change.TargetPath);
                             applied++;
+                            appliedMoves.Add(new FileMove
+                            {
+                                Source = change.SourcePath,
+                                Dest = change.TargetPath
+                            });
                         }
                         else if (!File.Exists(change.SourcePath))
                         {
@@ -1063,6 +1073,8 @@ namespace ModelExplorer
                     SetStatusText("工程名处理完成：" + applied + " 项");
                     Log("工程名处理完成：" + applied + " 项" +
                         (failures.Count > 0 ? "，失败 " + failures.Count + " 项" : ""));
+                    _lastProjectNameMoves.AddRange(appliedMoves);
+                    UndoProjectNameButton.IsEnabled = appliedMoves.Count > 0;
                     _checkingProjectNames = false;
                     CheckProjectNamesButton.IsEnabled = true;
                     if (applied > 0)
@@ -1077,6 +1089,7 @@ namespace ModelExplorer
         {
             _checkingProjectNames = false;
             CheckProjectNamesButton.IsEnabled = true;
+            UndoProjectNameButton.IsEnabled = _lastProjectNameMoves.Count > 0;
             SetStatusText(message);
             if (string.IsNullOrEmpty(detail))
             {
@@ -1086,6 +1099,63 @@ namespace ModelExplorer
             {
                 Log(message + "：" + detail);
             }
+        }
+
+        private void UndoProjectName_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lastProjectNameMoves.Count == 0)
+            {
+                return;
+            }
+
+            List<FileMove> moves = new List<FileMove>(_lastProjectNameMoves);
+            UndoProjectNameButton.IsEnabled = false;
+            SetStatusText("正在撤销工程名修改");
+            Log("开始撤销工程名修改");
+
+            ThreadPool.QueueUserWorkItem(delegate
+            {
+                int restored = 0;
+                List<string> failures = new List<string>();
+                for (int i = moves.Count - 1; i >= 0; i--)
+                {
+                    FileMove move = moves[i];
+                    try
+                    {
+                        if (File.Exists(move.Dest) && !File.Exists(move.Source))
+                        {
+                            File.Move(move.Dest, move.Source);
+                            restored++;
+                        }
+                        else if (!File.Exists(move.Dest))
+                        {
+                            failures.Add(Path.GetFileName(move.Dest) + "：文件不存在");
+                        }
+                        else
+                        {
+                            failures.Add(Path.GetFileName(move.Dest) + "：原名称位置已存在文件");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failures.Add(Path.GetFileName(move.Dest) + "：" + ex.Message);
+                    }
+                }
+
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    foreach (string failure in failures)
+                    {
+                        Log("撤销工程名失败：" + failure);
+                    }
+                    _lastProjectNameMoves.Clear();
+                    SetStatusText("撤销工程名完成：" + restored + " 项");
+                    Log("撤销工程名完成：" + restored + " 项" +
+                        (failures.Count > 0 ? "，失败 " + failures.Count + " 项" : ""));
+                    UndoProjectNameButton.IsEnabled = false;
+                    BeginScan(_config.LastDir);
+                }));
+            });
         }
 
         private void OpenSettings_Click(object sender, RoutedEventArgs e)

@@ -105,7 +105,9 @@ namespace ModelExplorer
             {
                 if (model.Kind == ModelKind.Stl)
                 {
-                    model.IsOrphan = !sourceNames.Contains(Path.GetFileNameWithoutExtension(model.Name));
+                    string stlBaseName = Path.GetFileNameWithoutExtension(model.Name);
+                    stlBaseName = stlBaseName.Replace("[装配体导出]", "");
+                    model.IsOrphan = !sourceNames.Contains(stlBaseName);
                     model.IsUnorganized = !IsOrganizedStlPath(root, model.Path);
                 }
             }
