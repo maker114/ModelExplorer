@@ -25,6 +25,7 @@ namespace ModelExplorer
         public string ModifiedText { get; set; }
         public bool IsOrphan { get; set; }
         public bool IsUnorganized { get; set; }
+        public bool IsAssemblyExport { get; set; }
 
         public string MatchText
         {

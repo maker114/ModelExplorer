@@ -85,6 +85,9 @@ namespace ModelExplorer
                         RelativePath = rel,
                         Folder = displayFolder,
                         Kind = kind,
+                        IsAssemblyExport = kind == ModelKind.Stl &&
+                                          (Path.GetFileName(file).Contains(" - ") ||
+                                           Path.GetFileName(file).Contains("[装配体导出]")),
                         TypeLabel = kind == ModelKind.Assembly ? "装配体" : kind == ModelKind.Stl ? "STL" : kind == ModelKind.ThreeMf ? "3MF" : "零件",
                         Size = info.Length,
                         SizeText = HumanSize(info.Length),
@@ -107,7 +110,7 @@ namespace ModelExplorer
                 {
                     string stlBaseName = Path.GetFileNameWithoutExtension(model.Name);
                     stlBaseName = stlBaseName.Replace("[装配体导出]", "");
-                    model.IsOrphan = !sourceNames.Contains(stlBaseName);
+                    model.IsOrphan = !model.IsAssemblyExport && !sourceNames.Contains(stlBaseName);
                     model.IsUnorganized = !IsOrganizedStlPath(root, model.Path);
                 }
             }

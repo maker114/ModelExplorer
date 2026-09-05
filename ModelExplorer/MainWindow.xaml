@@ -614,7 +614,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 2.3.2"
+              <TextBlock Text="V 2.3.3"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -827,10 +827,18 @@
                           Margin="0,8,0,0"
                           IsEnabled="False"
                           Click="UndoOrganize_Click" />
+                </StackPanel>
+              </Border>
+
+              <TextBlock Text="工程名整理"
+                         Style="{StaticResource SidebarSectionTitleStyle}"
+                         Margin="0,16,0,8" />
+              <Border Style="{StaticResource SidebarBoxStyle}">
+                <StackPanel>
                   <Button x:Name="CheckProjectNamesButton"
                           Content="检查 / 补充工程名"
                           Style="{StaticResource SecondaryButtonStyle}"
-                          Margin="0,8,0,0"
+                          Margin="0,7,0,0"
                           Click="CheckProjectNames_Click" />
                   <Button x:Name="UndoProjectNameButton"
                           Content="撤销工程名修改"

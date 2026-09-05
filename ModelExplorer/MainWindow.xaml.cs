@@ -417,7 +417,10 @@ namespace ModelExplorer
                 {
                     status += "未整理\n";
                 }
-                status += (selected.IsOrphan ? "未对应工程文件" : "已对应工程文件") + "\n";
+                if (!selected.IsAssemblyExport)
+                {
+                    status += (selected.IsOrphan ? "未对应工程文件" : "已对应工程文件") + "\n";
+                }
             }
             DetailMeta.Text =
                 "类型：" + selected.TypeLabel + "\n" +
