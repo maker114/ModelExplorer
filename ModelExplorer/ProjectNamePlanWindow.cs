@@ -88,6 +88,17 @@ namespace ModelExplorer
             body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
 
             string rootName = _changes.Count > 0 ? _changes[0].RootName : "";
+            List<string> subProjectNames = new List<string>();
+            HashSet<string> seenSubProjects = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ProjectNameChange change in _changes)
+            {
+                if (!string.IsNullOrEmpty(change.SubProjectName) &&
+                    seenSubProjects.Add(change.SubProjectName))
+                {
+                    subProjectNames.Add(change.SubProjectName);
+                }
+            }
+            subProjectNames.Sort(StringComparer.OrdinalIgnoreCase);
 
             Border rootBanner = new Border
             {
@@ -116,6 +127,27 @@ namespace ModelExplorer
                 FontWeight = FontWeights.Bold,
                 TextWrapping = TextWrapping.Wrap
             });
+            if (subProjectNames.Count > 0)
+            {
+                bannerPanel.Children.Add(new TextBlock
+                {
+                    Text = "子工程名",
+                    Foreground = theme.MutedBrush,
+                    FontFamily = new FontFamily("Microsoft YaHei UI"),
+                    FontSize = 12,
+                    FontWeight = FontWeights.Bold,
+                    Margin = new Thickness(0, 8, 0, 0)
+                });
+                bannerPanel.Children.Add(new TextBlock
+                {
+                    Text = string.Join(" · ", subProjectNames.ToArray()),
+                    Foreground = theme.AccentBrush,
+                    FontFamily = new FontFamily("Microsoft YaHei UI"),
+                    FontSize = 18,
+                    FontWeight = FontWeights.Bold,
+                    TextWrapping = TextWrapping.Wrap
+                });
+            }
             rootBanner.Child = bannerPanel;
             Grid.SetRow(rootBanner, 0);
             body.Children.Add(rootBanner);
@@ -185,9 +217,10 @@ namespace ModelExplorer
             Grid grid = CreateRowGrid();
             AddHeaderCell(grid, 0, "勾选");
             AddHeaderCell(grid, 1, "文件类型");
-            AddHeaderCell(grid, 2, "分类");
-            AddHeaderCell(grid, 3, "当前文件名");
-            AddHeaderCell(grid, 4, "修改后文件名");
+            AddHeaderCell(grid, 2, "子工程");
+            AddHeaderCell(grid, 3, "分类");
+            AddHeaderCell(grid, 4, "当前文件名");
+            AddHeaderCell(grid, 5, "修改后文件名");
             border.Child = grid;
             return border;
         }
@@ -211,9 +244,10 @@ namespace ModelExplorer
             grid.Children.Add(checkBox);
 
             AddTypeCell(grid, 1, change.FileType);
-            AddCell(grid, 2, change.Category, change.Category == "修改");
-            AddCell(grid, 3, change.OriginalName, false, change.SourcePath);
-            AddCell(grid, 4, change.TargetName, true, change.TargetPath);
+            AddSubProjectCell(grid, 2, change.SubProjectName);
+            AddCell(grid, 3, change.Category, change.Category == "修改");
+            AddCell(grid, 4, change.OriginalName, false, change.SourcePath);
+            AddCell(grid, 5, change.TargetName, true, change.TargetPath);
             border.Child = grid;
             return border;
         }
@@ -223,6 +257,7 @@ namespace ModelExplorer
             Grid grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(52) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(118) });
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(120) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(96) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -277,6 +312,22 @@ namespace ModelExplorer
             {
                 ToolTipService.SetToolTip(cell, tooltip);
             }
+            Grid.SetColumn(cell, column);
+            grid.Children.Add(cell);
+        }
+
+        private static void AddSubProjectCell(Grid grid, int column, string subProjectName)
+        {
+            TextBlock cell = new TextBlock
+            {
+                Text = string.IsNullOrEmpty(subProjectName) ? "—" : subProjectName,
+                Foreground = ThemeManager.Current.MutedBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 11,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                Margin = new Thickness(4, 0, 4, 0)
+            };
             Grid.SetColumn(cell, column);
             grid.Children.Add(cell);
         }
