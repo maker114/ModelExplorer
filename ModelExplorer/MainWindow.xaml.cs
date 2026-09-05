@@ -598,6 +598,7 @@ namespace ModelExplorer
             SetStatusText("正在整理 STL / 3MF 文件");
             Log("开始整理 STL / 3MF 文件");
             bool byFolder = OrganizeByFolderCheck.IsChecked == true;
+            UndoProjectNameButton.IsEnabled = false;
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -719,6 +720,8 @@ namespace ModelExplorer
                         _lastMoves.Clear();
                         _lastMoves.AddRange(moves);
                         UndoOrganizeButton.IsEnabled = moves.Count > 0;
+                        RetargetProjectNameUndoAfterOrganize(moves);
+                        UndoProjectNameButton.IsEnabled = _lastProjectNameMoves.Count > 0;
                         if (moves.Count > 0)
                         {
                             OrganizeReportWindow reportWindow = new OrganizeReportWindow(report, createdDirs, deletedDirs);
@@ -734,6 +737,7 @@ namespace ModelExplorer
                     {
                         SetStatusText("整理失败");
                         Log("整理失败：" + ex.Message);
+                        UndoProjectNameButton.IsEnabled = _lastProjectNameMoves.Count > 0;
                     }));
                 }
             });
@@ -921,43 +925,102 @@ namespace ModelExplorer
 
             List<FileMove> moves = new List<FileMove>(_lastMoves);
             UndoOrganizeButton.IsEnabled = false;
+            UndoProjectNameButton.IsEnabled = false;
             SetStatusText("正在撤销整理");
             Log("开始撤销整理");
 
             ThreadPool.QueueUserWorkItem(delegate
             {
                 int restored = 0;
-                try
+                List<string> failures = new List<string>();
+                List<FileMove> restoredMoves = new List<FileMove>();
+                for (int i = moves.Count - 1; i >= 0; i--)
                 {
-                    for (int i = moves.Count - 1; i >= 0; i--)
+                    FileMove move = moves[i];
+                    try
                     {
-                        FileMove move = moves[i];
                         if (File.Exists(move.Dest) && !File.Exists(move.Source))
                         {
                             Directory.CreateDirectory(Path.GetDirectoryName(move.Source));
                             File.Move(move.Dest, move.Source);
                             restored++;
+                            restoredMoves.Add(move);
+                        }
+                        else if (!File.Exists(move.Dest))
+                        {
+                            failures.Add(Path.GetFileName(move.Dest) + "：文件不存在");
+                        }
+                        else
+                        {
+                            failures.Add(Path.GetFileName(move.Dest) + "：原位置已存在文件");
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    Dispatcher.BeginInvoke(new Action(() =>
+                    catch (Exception ex)
                     {
-                        SetStatusText("撤销失败");
-                        Log("撤销失败：" + ex.Message);
-                    }));
-                    return;
+                        failures.Add(Path.GetFileName(move.Dest) + "：" + ex.Message);
+                    }
                 }
 
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
+                    foreach (string failure in failures)
+                    {
+                        Log("撤销整理失败：" + failure);
+                    }
                     _lastMoves.Clear();
-                    SetStatusText("撤销完成");
-                    Log("撤销完成：" + restored + " 个文件");
+                    RetargetProjectNameUndoAfterOrganizeUndo(restoredMoves);
+                    UndoProjectNameButton.IsEnabled = _lastProjectNameMoves.Count > 0;
+                    SetStatusText("撤销整理完成：" + restored + " 项");
+                    Log("撤销整理完成：" + restored + " 项" +
+                        (failures.Count > 0 ? "，失败 " + failures.Count + " 项" : ""));
                     BeginScan(_config.LastDir);
                 }));
             });
+        }
+
+        private void RetargetProjectNameUndoAfterOrganize(List<FileMove> organizeMoves)
+        {
+            foreach (FileMove organizeMove in organizeMoves)
+            {
+                foreach (FileMove projectMove in _lastProjectNameMoves)
+                {
+                    if (PathEquals(projectMove.Dest, organizeMove.Source))
+                    {
+                        projectMove.Dest = organizeMove.Dest;
+                    }
+                }
+            }
+        }
+
+        private void RetargetProjectNameUndoAfterOrganizeUndo(List<FileMove> restoredOrganizeMoves)
+        {
+            foreach (FileMove restoredMove in restoredOrganizeMoves)
+            {
+                foreach (FileMove projectMove in _lastProjectNameMoves)
+                {
+                    if (PathEquals(projectMove.Dest, restoredMove.Dest))
+                    {
+                        projectMove.Dest = restoredMove.Source;
+                    }
+                }
+            }
+        }
+
+        private void RemoveOrganizeMovesAffectedByProjectUndo(FileMove projectMove)
+        {
+            string preOrganizePath = Path.Combine(
+                Path.GetDirectoryName(projectMove.Source),
+                Path.GetFileName(projectMove.Dest));
+            _lastMoves.RemoveAll(delegate(FileMove move)
+            {
+                return PathEquals(move.Source, preOrganizePath) ||
+                       PathEquals(move.Dest, projectMove.Dest);
+            });
+        }
+
+        private static bool PathEquals(string first, string second)
+        {
+            return string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
         }
 
         private void CheckProjectNames_Click(object sender, RoutedEventArgs e)
@@ -1113,6 +1176,7 @@ namespace ModelExplorer
 
             List<FileMove> moves = new List<FileMove>(_lastProjectNameMoves);
             UndoProjectNameButton.IsEnabled = false;
+            UndoOrganizeButton.IsEnabled = false;
             SetStatusText("正在撤销工程名修改");
             Log("开始撤销工程名修改");
 
@@ -1120,6 +1184,7 @@ namespace ModelExplorer
             {
                 int restored = 0;
                 List<string> failures = new List<string>();
+                List<FileMove> restoredMoves = new List<FileMove>();
                 for (int i = moves.Count - 1; i >= 0; i--)
                 {
                     FileMove move = moves[i];
@@ -1129,6 +1194,7 @@ namespace ModelExplorer
                         {
                             File.Move(move.Dest, move.Source);
                             restored++;
+                            restoredMoves.Add(move);
                         }
                         else if (!File.Exists(move.Dest))
                         {
@@ -1151,6 +1217,11 @@ namespace ModelExplorer
                     {
                         Log("撤销工程名失败：" + failure);
                     }
+                    foreach (FileMove restoredMove in restoredMoves)
+                    {
+                        RemoveOrganizeMovesAffectedByProjectUndo(restoredMove);
+                    }
+                    UndoOrganizeButton.IsEnabled = _lastMoves.Count > 0;
                     _lastProjectNameMoves.Clear();
                     SetStatusText("撤销工程名完成：" + restored + " 项");
                     Log("撤销工程名完成：" + restored + " 项" +
