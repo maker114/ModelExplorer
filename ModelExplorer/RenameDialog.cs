@@ -29,8 +29,8 @@ namespace ModelExplorer
             AllowsTransparency = true;
             Background = Brushes.Transparent;
             ResizeMode = ResizeMode.NoResize;
-            Width = 480;
-            Height = 300;
+            Width = 430;
+            Height = 270;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Icon = AppIcon.WindowIcon;
 
@@ -58,9 +58,8 @@ namespace ModelExplorer
                 FontSize = 17,
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center,
-                Margin = new Thickness(18, 0, 0, 0)
             };
-            Grid header = new Grid { Margin = new Thickness(18, 0, 10, 0) };
+            Grid header = new Grid { Margin = new Thickness(2, 0, 10, 0) };
             header.Children.Add(title);
             Button close = UiFactory.MakeChromeButton("×", delegate { Close(); });
             close.HorizontalAlignment = HorizontalAlignment.Right;
