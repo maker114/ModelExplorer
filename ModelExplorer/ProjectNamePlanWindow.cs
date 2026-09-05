@@ -138,15 +138,34 @@ namespace ModelExplorer
                     FontWeight = FontWeights.Bold,
                     Margin = new Thickness(0, 8, 0, 0)
                 });
-                bannerPanel.Children.Add(new TextBlock
+
+                WrapPanel subProjectPanel = new WrapPanel
                 {
-                    Text = string.Join(" · ", subProjectNames.ToArray()),
-                    Foreground = theme.AccentBrush,
-                    FontFamily = new FontFamily("Microsoft YaHei UI"),
-                    FontSize = 18,
-                    FontWeight = FontWeights.Bold,
-                    TextWrapping = TextWrapping.Wrap
-                });
+                    Margin = new Thickness(0, 5, 0, 0)
+                };
+                foreach (string subProjectName in subProjectNames)
+                {
+                    TextBlock subProjectText = new TextBlock
+                    {
+                        Text = subProjectName,
+                        Foreground = theme.AccentBrush,
+                        FontFamily = new FontFamily("Microsoft YaHei UI"),
+                        FontSize = 15,
+                        FontWeight = FontWeights.Bold
+                    };
+                    Border subProjectChip = new Border
+                    {
+                        Child = subProjectText,
+                        CornerRadius = new CornerRadius(7),
+                        BorderBrush = theme.AccentBrush,
+                        BorderThickness = new Thickness(1),
+                        Background = MakeTypeBackground(theme.AccentBrush),
+                        Padding = new Thickness(8, 2, 8, 2),
+                        Margin = new Thickness(0, 0, 6, 4)
+                    };
+                    subProjectPanel.Children.Add(subProjectChip);
+                }
+                bannerPanel.Children.Add(subProjectPanel);
             }
             rootBanner.Child = bannerPanel;
             Grid.SetRow(rootBanner, 0);
