@@ -346,6 +346,14 @@ namespace ModelExplorer
             };
         }
 
+        /// <summary>
+        /// 拨钮开关模板（设置窗口使用）。
+        ///
+        /// V3.0.2 起加入滑动动画：滑块沿轨道平移 20px（0.16s 缓出），关闭时缓入滑回，
+        /// 与主界面开关的时长和缓动一致。
+        /// 注意：只做位移、不再修改对齐方式——位移与「改为右对齐」叠加会让滑块冲出轨道，
+        /// 主界面 MainWindow.xaml 的 ToggleSwitchStyle 正是那种写法（已单独反馈）。
+        /// </summary>
         public static ControlTemplate ToggleTemplate()
         {
             string accent = Hex(ThemeManager.Current.Accent);
@@ -354,14 +362,24 @@ namespace ModelExplorer
                 "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='CheckBox'>" +
                 "<Grid Width='48' Height='28'>" +
                 "<Border x:Name='track' Width='46' Height='26' CornerRadius='13' Background='" + trackOff + "'/>" +
-                "<Ellipse x:Name='thumb' Width='20' Height='20' Fill='#FFFFFF' HorizontalAlignment='Left' Margin='3,0,0,0'/>" +
+                "<Ellipse x:Name='thumb' Width='20' Height='20' Fill='#FFFFFF' HorizontalAlignment='Left' Margin='3,0,0,0'>" +
+                "<Ellipse.RenderTransform><TranslateTransform x:Name='thumbMove'/></Ellipse.RenderTransform>" +
+                "</Ellipse>" +
                 "<ContentPresenter Visibility='Collapsed'/>" +
                 "</Grid>" +
                 "<ControlTemplate.Triggers>" +
                 "<Trigger Property='IsChecked' Value='True'>" +
                 "<Setter TargetName='track' Property='Background' Value='" + accent + "'/>" +
-                "<Setter TargetName='thumb' Property='HorizontalAlignment' Value='Right'/>" +
-                "<Setter TargetName='thumb' Property='Margin' Value='0,0,3,0'/>" +
+                "<Trigger.EnterActions><BeginStoryboard><Storyboard>" +
+                "<DoubleAnimation Storyboard.TargetName='thumbMove' Storyboard.TargetProperty='(TranslateTransform.X)' To='20' Duration='0:0:0.16'>" +
+                "<DoubleAnimation.EasingFunction><QuadraticEase EasingMode='EaseOut'/></DoubleAnimation.EasingFunction>" +
+                "</DoubleAnimation>" +
+                "</Storyboard></BeginStoryboard></Trigger.EnterActions>" +
+                "<Trigger.ExitActions><BeginStoryboard><Storyboard>" +
+                "<DoubleAnimation Storyboard.TargetName='thumbMove' Storyboard.TargetProperty='(TranslateTransform.X)' To='0' Duration='0:0:0.16'>" +
+                "<DoubleAnimation.EasingFunction><QuadraticEase EasingMode='EaseInOut'/></DoubleAnimation.EasingFunction>" +
+                "</DoubleAnimation>" +
+                "</Storyboard></BeginStoryboard></Trigger.ExitActions>" +
                 "</Trigger>" +
                 "</ControlTemplate.Triggers>" +
                 "</ControlTemplate>";

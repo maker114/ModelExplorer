@@ -225,6 +225,8 @@ namespace ModelExplorer
             _stlUnitsCombo.SelectedItem = SolidWorksStlExporter.NormalizeUnits(_source.StlUnits);
             StyleComboBox(_stlUnitsCombo, theme);
             unitsPanel.Children.Add(_stlUnitsCombo);
+            // 说明文字与该列下拉框左对齐，避免被误认为属于另一列
+            unitsPanel.Children.Add(HintText("导出模型的尺寸基准，需与切片软件保持一致。", theme, 6, 0));
             stlOptionsRow.Children.Add(unitsPanel);
 
             StackPanel qualityPanel = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
@@ -239,16 +241,12 @@ namespace ModelExplorer
             }
             StyleComboBox(_stlQualityCombo, theme);
             qualityPanel.Children.Add(_stlQualityCombo);
+            // 说明文字与该列下拉框左对齐，避免被误认为属于另一列
+            qualityPanel.Children.Add(HintText("质量越高三角面越密、模型越精细，文件也越大。", theme, 6, 0));
             Grid.SetColumn(qualityPanel, 1);
             stlOptionsRow.Children.Add(qualityPanel);
 
             body.Children.Add(stlOptionsRow);
-
-            body.Children.Add(HintText(
-                "单位决定导出模型的尺寸基准，需与切片软件保持一致；质量越高三角面越密、模型越精细，文件也越大。",
-                theme,
-                8,
-                0));
 
             body.Children.Add(SectionTitle("外观预设", 22));
             _themeCombo = new ComboBox
