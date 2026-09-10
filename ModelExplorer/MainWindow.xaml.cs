@@ -95,8 +95,8 @@ namespace ModelExplorer
 
         private void ApplyConfigToUi()
         {
-            KeepHistoryCheck.IsChecked = _config.KeepHistory;
-            OpenBambuCheck.IsChecked = _config.OpenBambu;
+            // 「保留历史版本 / 导出后打开 Bambu Studio」于 V3.0.5 移入设置窗口，
+            // 导出时直接读取 _config，不再有主界面控件。
             PartList.ItemsSource = _visibleParts;
             AsmList.ItemsSource = _visibleAssemblies;
             StlList.ItemsSource = _visibleStls;
@@ -520,8 +520,9 @@ namespace ModelExplorer
 
             ConvertOptions options = new ConvertOptions
             {
-                KeepHistory = KeepHistoryCheck.IsChecked == true,
-                OpenBambu = OpenBambuCheck.IsChecked == true,
+                // 「保留历史版本 / 导出后打开 Bambu Studio」现由设置窗口维护
+                KeepHistory = _config.KeepHistory,
+                OpenBambu = _config.OpenBambu,
                 BinaryStl = _config.UseBinaryStl,
                 StlUnits = _config.StlUnits,
                 StlQuality = _config.StlQuality
@@ -567,13 +568,6 @@ namespace ModelExplorer
             {
                 SetStatusText("转换完成");
             }
-        }
-
-        private void OptionChanged(object sender, RoutedEventArgs e)
-        {
-            _config.KeepHistory = KeepHistoryCheck.IsChecked == true;
-            _config.OpenBambu = OpenBambuCheck.IsChecked == true;
-            ConfigService.Save(_config);
         }
 
         private void OrganizeFiles_Click(object sender, RoutedEventArgs e)

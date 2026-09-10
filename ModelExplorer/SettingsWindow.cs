@@ -22,6 +22,8 @@ namespace ModelExplorer
         private ComboBox _themeCombo;
         private ComboBox _fontSizeCombo;
         private ToggleSwitch _binaryStlSwitch;
+        private ToggleSwitch _keepHistorySwitch;
+        private ToggleSwitch _openBambuSwitch;
         private ComboBox _stlUnitsCombo;
         private ComboBox _stlQualityCombo;
 
@@ -38,7 +40,7 @@ namespace ModelExplorer
             Background = Brushes.Transparent;
             ResizeMode = ResizeMode.NoResize;
             Width = 560;
-            Height = 720;
+            Height = 830;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Icon = AppIcon.WindowIcon;
 
@@ -175,6 +177,30 @@ namespace ModelExplorer
             solidWorksPathRow.Children.Add(browseSolidWorks);
             body.Children.Add(solidWorksPathRow);
 
+            // ---- 转换设置（V3.0.5 从主界面左侧栏移入）----
+            body.Children.Add(SectionTitle("转换设置", 22));
+
+            _keepHistorySwitch = new ToggleSwitch
+            {
+                IsChecked = _source.KeepHistory,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            body.Children.Add(MakeToggleRow("保留历史版本", _keepHistorySwitch, theme, 8));
+            body.Children.Add(HintText(
+                "同名 STL 已存在时生成带时间戳的新文件，而不是直接覆盖。",
+                theme, 2, 14));
+
+            _openBambuSwitch = new ToggleSwitch
+            {
+                IsChecked = _source.OpenBambu,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            body.Children.Add(MakeToggleRow("导出后打开 Bambu Studio", _openBambuSwitch, theme, 0));
+            body.Children.Add(HintText(
+                "导出完成后自动启动 Bambu Studio 并载入刚导出的 STL。",
+                theme, 2, 0));
+
+            // ---- STL 导出 ----
             body.Children.Add(SectionTitle("STL 导出", 22));
             body.Children.Add(new TextBlock
             {
@@ -186,30 +212,12 @@ namespace ModelExplorer
                 Margin = new Thickness(0, 6, 0, 10)
             });
 
-            Grid binaryRow = new Grid { Margin = new Thickness(0, 0, 0, 6) };
-            binaryRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            binaryRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            TextBlock binaryLabel = new TextBlock
-            {
-                Text = "使用二进制 STL",
-                Foreground = theme.TextBrush,
-                FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 12,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            Grid.SetColumn(binaryLabel, 0);
-            binaryRow.Children.Add(binaryLabel);
-
-            // 与主界面「转换设置」使用同一套拨钮开关外观
             _binaryStlSwitch = new ToggleSwitch
             {
                 IsChecked = _source.UseBinaryStl,
                 VerticalAlignment = VerticalAlignment.Center
             };
-            Grid.SetColumn(_binaryStlSwitch, 1);
-            binaryRow.Children.Add(_binaryStlSwitch);
-            body.Children.Add(binaryRow);
+            body.Children.Add(MakeToggleRow("使用二进制 STL", _binaryStlSwitch, theme, 0));
 
             body.Children.Add(HintText(
                 "开启时导出二进制 STL，体积小、加载快；关闭后导出 ASCII 文本格式，文件体积约为二进制的 5～10 倍。",
@@ -381,8 +389,8 @@ namespace ModelExplorer
             Result = new AppConfig
             {
                 LastDir = _source.LastDir,
-                KeepHistory = _source.KeepHistory,
-                OpenBambu = _source.OpenBambu,
+                KeepHistory = _keepHistorySwitch.IsChecked == true,
+                OpenBambu = _openBambuSwitch.IsChecked == true,
                 BinaryStl = _binaryStlSwitch.IsChecked == true,
                 StlUnits = (string)_stlUnitsCombo.SelectedItem,
                 StlQuality = StlQualityLabels.ToToken((string)_stlQualityCombo.SelectedItem),
@@ -405,6 +413,29 @@ namespace ModelExplorer
                 FontSize = 11,
                 Margin = new Thickness(0, 0, 0, 4)
             };
+        }
+
+        /// <summary>「标签 + 拨钮开关」一行，开关右对齐，与主界面原有的转换设置一致。</summary>
+        private static Grid MakeToggleRow(string label, CheckBox toggle, AppTheme theme, double topMargin)
+        {
+            Grid row = new Grid { Margin = new Thickness(0, topMargin, 0, 0) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            TextBlock text = new TextBlock
+            {
+                Text = label,
+                Foreground = theme.TextBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 12,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(text, 0);
+            row.Children.Add(text);
+
+            Grid.SetColumn(toggle, 1);
+            row.Children.Add(toggle);
+            return row;
         }
 
         /// <summary>控件下方的小字说明，用于解释该设置的作用。</summary>

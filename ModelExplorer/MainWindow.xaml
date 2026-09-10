@@ -616,7 +616,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 3.0.4"
+              <TextBlock Text="V 3.0.5"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -760,46 +760,6 @@
                 </StackPanel>
               </Border>
 
-              <TextBlock Text="转换设置"
-                         Style="{StaticResource SidebarSectionTitleStyle}"
-                         Margin="0,16,0,8" />
-              <Border Style="{StaticResource SidebarBoxStyle}">
-                <StackPanel>
-                  <Grid Margin="0,7,0,0">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="保留历史版本"
-                               Foreground="{DynamicResource TextBrush}"
-                               FontSize="11"
-                               VerticalAlignment="Center" />
-                    <CheckBox x:Name="KeepHistoryCheck"
-                              Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              Checked="OptionChanged"
-                              Unchecked="OptionChanged" />
-                  </Grid>
-                  <Grid Margin="0,7,0,0">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*" />
-                      <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="导出后打开 Bambu Studio"
-                               Foreground="{DynamicResource TextBrush}"
-                               FontSize="11"
-                               VerticalAlignment="Center" />
-                    <CheckBox x:Name="OpenBambuCheck"
-                              Grid.Column="1"
-                              Style="{StaticResource ToggleSwitchStyle}"
-                              Checked="OptionChanged"
-                              Unchecked="OptionChanged" />
-                  </Grid>
-                </StackPanel>
-              </Border>
-
               <TextBlock Text="文件整理"
                          Style="{StaticResource SidebarSectionTitleStyle}"
                          Margin="0,16,0,8" />
@@ -839,7 +799,7 @@
                 <StackPanel>
                   <Button x:Name="CheckProjectNamesButton"
                           Content="检查 / 补充工程名"
-                          Style="{StaticResource SecondaryButtonStyle}"
+                          Style="{StaticResource PrimaryButtonStyle}"
                           Margin="0,7,0,0"
                           Click="CheckProjectNames_Click" />
                   <Button x:Name="UndoProjectNameButton"
