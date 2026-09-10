@@ -10,7 +10,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyTitle>Model Explorer Core</AssemblyTitle>
     <Product>Model Explorer</Product>
-    <Version>3.0.2</Version>
+    <Version>3.0.3</Version>
   </PropertyGroup>
 
   <ItemGroup>

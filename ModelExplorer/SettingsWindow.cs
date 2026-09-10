@@ -10,6 +10,12 @@ namespace ModelExplorer
 {
     public class SettingsWindow : Window
     {
+        /// <summary>
+        /// 表单右侧「操作列」的宽度：与路径行里 80px 的「浏览...」按钮 + 8px 间距一致。
+        /// 下拉框行按此预留右侧空间，使各输入控件的右边缘与路径文本框对齐。
+        /// </summary>
+        private const double ActionColumnWidth = 88;
+
         private readonly AppConfig _source;
         private TextBox _bambuPathBox;
         private TextBox _solidWorksPathBox;
@@ -211,7 +217,10 @@ namespace ModelExplorer
                 2,
                 18));
 
-            Grid stlOptionsRow = new Grid();
+            // 右边缘与上方「Bambu Studio / SolidWorks」路径文本框的右边缘对齐：
+            // 那一行右侧是 80px 的「浏览...」按钮加 8px 间距，这里预留同样的宽度，
+            // 否则下拉框会比文本框多伸出 88px，看起来不齐。
+            Grid stlOptionsRow = new Grid { Margin = new Thickness(0, 0, ActionColumnWidth, 0) };
             stlOptionsRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             stlOptionsRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
@@ -226,23 +235,21 @@ namespace ModelExplorer
             StyleComboBox(_stlUnitsCombo, theme);
             unitsPanel.Children.Add(_stlUnitsCombo);
             // 说明文字与该列下拉框左对齐，避免被误认为属于另一列
-            unitsPanel.Children.Add(HintText("导出模型的尺寸基准，需与切片软件保持一致。", theme, 6, 0));
+            unitsPanel.Children.Add(HintText("需与切片软件保持一致。", theme, 6, 0));
             stlOptionsRow.Children.Add(unitsPanel);
 
             StackPanel qualityPanel = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
             qualityPanel.Children.Add(OptionLabel("STL 质量", theme));
             _stlQualityCombo = CreateCombo(theme);
-            _stlQualityCombo.Items.Add("Coarse");
-            _stlQualityCombo.Items.Add("Fine");
-            _stlQualityCombo.SelectedItem = SolidWorksStlExporter.NormalizeQuality(_source.StlQuality);
-            if (_stlQualityCombo.SelectedItem == null)
+            foreach (string qualityName in StlQualityLabels.DisplayNames)
             {
-                _stlQualityCombo.SelectedItem = "Fine";
+                _stlQualityCombo.Items.Add(qualityName);
             }
+            _stlQualityCombo.SelectedItem = StlQualityLabels.ToDisplay(_source.StlQuality);
             StyleComboBox(_stlQualityCombo, theme);
             qualityPanel.Children.Add(_stlQualityCombo);
             // 说明文字与该列下拉框左对齐，避免被误认为属于另一列
-            qualityPanel.Children.Add(HintText("质量越高三角面越密、模型越精细，文件也越大。", theme, 6, 0));
+            qualityPanel.Children.Add(HintText("质量越高越精细，文件也越大。", theme, 6, 0));
             Grid.SetColumn(qualityPanel, 1);
             stlOptionsRow.Children.Add(qualityPanel);
 
@@ -378,7 +385,7 @@ namespace ModelExplorer
                 OpenBambu = _source.OpenBambu,
                 BinaryStl = _binaryStlSwitch.IsChecked == true,
                 StlUnits = (string)_stlUnitsCombo.SelectedItem,
-                StlQuality = (string)_stlQualityCombo.SelectedItem,
+                StlQuality = StlQualityLabels.ToToken((string)_stlQualityCombo.SelectedItem),
                 BambuPath = _bambuPathBox.Text.Trim(),
                 SolidWorksPath = _solidWorksPathBox.Text.Trim(),
                 Theme = (string)_themeCombo.SelectedItem,

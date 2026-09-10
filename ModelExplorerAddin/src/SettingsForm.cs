@@ -77,8 +77,12 @@ namespace ModelExplorerAddin
 
             _stlQuality = new ComboBox();
             _stlQuality.DropDownStyle = ComboBoxStyle.DropDownList;
-            _stlQuality.Items.AddRange(new object[] { "Coarse", "Fine" });
-            _stlQuality.SelectedItem = NormalizeQualitySelection(settings.StlQuality);
+            // 与主程序设置窗口显示同一组中文名称（配置里仍存 Coarse / Fine）
+            foreach (string qualityName in StlQualityLabels.DisplayNames)
+            {
+                _stlQuality.Items.Add(qualityName);
+            }
+            _stlQuality.SelectedItem = StlQualityLabels.ToDisplay(settings.StlQuality);
             _stlQuality.SetBounds(346, 126, 100, 24);
             Controls.Add(_stlQuality);
 
@@ -110,7 +114,7 @@ namespace ModelExplorerAddin
                 _source.KeepHistory = _keepHistory.Checked;
                 _source.BinaryStl = _binaryStl.Checked;
                 _source.StlUnits = (string)_stlUnits.SelectedItem;
-                _source.StlQuality = (string)_stlQuality.SelectedItem;
+                _source.StlQuality = StlQualityLabels.ToToken((string)_stlQuality.SelectedItem);
                 return _source;
             }
         }
@@ -128,12 +132,6 @@ namespace ModelExplorerAddin
                     _bambuPath.Text = dialog.FileName;
                 }
             }
-        }
-
-        /// <summary>质量下拉只提供 Coarse / Fine，映射不到时回退 Fine。</summary>
-        private static string NormalizeQualitySelection(string value)
-        {
-            return SolidWorksStlExporter.NormalizeQuality(value) == "Coarse" ? "Coarse" : "Fine";
         }
     }
 }
