@@ -105,7 +105,7 @@ namespace ModelExplorer
                 Background = theme.PanelActiveBrush,
                 BorderBrush = theme.AccentBrush,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(9),
+                CornerRadius = new CornerRadius(0),
                 Padding = new Thickness(12, 8, 12, 8),
                 Margin = new Thickness(2, 0, 2, 8)
             };
@@ -121,7 +121,7 @@ namespace ModelExplorer
             bannerPanel.Children.Add(new TextBlock
             {
                 Text = rootName,
-                Foreground = theme.AccentBrush,
+                Foreground = theme.TextBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 26,
                 FontWeight = FontWeights.Bold,
@@ -148,7 +148,7 @@ namespace ModelExplorer
                     TextBlock subProjectText = new TextBlock
                     {
                         Text = subProjectName,
-                        Foreground = theme.AccentBrush,
+                        Foreground = theme.OnAccentBrush,
                         FontFamily = new FontFamily("Microsoft YaHei UI"),
                         FontSize = 15,
                         FontWeight = FontWeights.Bold
@@ -156,10 +156,10 @@ namespace ModelExplorer
                     Border subProjectChip = new Border
                     {
                         Child = subProjectText,
-                        CornerRadius = new CornerRadius(7),
+                        CornerRadius = new CornerRadius(0),
                         BorderBrush = theme.AccentBrush,
                         BorderThickness = new Thickness(1),
-                        Background = MakeTypeBackground(theme.AccentBrush),
+                        Background = theme.AccentBrush,
                         Padding = new Thickness(8, 2, 8, 2),
                         Margin = new Thickness(0, 0, 6, 4)
                     };
@@ -288,9 +288,9 @@ namespace ModelExplorer
             Border border = new Border
             {
                 Background = header ? theme.PanelActiveBrush : theme.PanelBrush,
-                BorderBrush = header ? theme.BorderBrush : new SolidColorBrush(Color.FromRgb(0x24, 0x24, 0x24)),
+                BorderBrush = theme.BorderBrush,
                 BorderThickness = new Thickness(1, 1, 1, header ? 1 : 0),
-                CornerRadius = new CornerRadius(6),
+                CornerRadius = new CornerRadius(0),
                 Padding = new Thickness(8, 5, 8, 5),
                 Margin = new Thickness(0, 0, 0, header ? 6 : 0)
             };
@@ -353,14 +353,12 @@ namespace ModelExplorer
 
         private static void AddTypeCell(Grid grid, int column, string fileType)
         {
-            AppTheme theme = ThemeManager.Current;
-            Brush brush = fileType == "零件" ? theme.PartBrush
-                : fileType == "装配体导出" ? theme.AssemblyBrush
-                : theme.StlBrush;
+            // v3.1.0：实心色块 + 自动对比色文字（原为淡色底 + 彩色字）
+            Brush fill = TypePalette.FillForFileType(fileType);
             TextBlock text = new TextBlock
             {
                 Text = fileType ?? "STL",
-                Foreground = brush,
+                Foreground = TypePalette.TextForFileType(fileType),
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 11,
                 FontWeight = FontWeights.Bold,
@@ -370,27 +368,16 @@ namespace ModelExplorer
             Border badge = new Border
             {
                 Child = text,
-                CornerRadius = new CornerRadius(6),
-                BorderBrush = brush,
+                CornerRadius = new CornerRadius(0),
+                BorderBrush = fill,
                 BorderThickness = new Thickness(1),
-                Background = MakeTypeBackground(brush),
+                Background = fill,
                 Padding = new Thickness(8, 2, 8, 2),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetColumn(badge, column);
             grid.Children.Add(badge);
-        }
-
-        private static Brush MakeTypeBackground(Brush brush)
-        {
-            SolidColorBrush solid = brush as SolidColorBrush;
-            if (solid == null)
-            {
-                return Brushes.Transparent;
-            }
-            Color color = solid.Color;
-            return new SolidColorBrush(Color.FromArgb(0x22, color.R, color.G, color.B));
         }
 
         private void SetChangeSelected(ProjectNameChange change, bool selected)
@@ -458,7 +445,7 @@ namespace ModelExplorer
                 Width = primary ? 130 : 90,
                 Height = 34,
                 Background = primary ? ThemeManager.Current.AccentBrush : ThemeManager.Current.PanelActiveBrush,
-                Foreground = primary ? new SolidColorBrush(Color.FromRgb(0x15, 0x15, 0x15)) : ThemeManager.Current.TextBrush,
+                Foreground = primary ? ThemeManager.Current.OnAccentBrush : ThemeManager.Current.TextBrush,
                 BorderThickness = new Thickness(0),
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 12,

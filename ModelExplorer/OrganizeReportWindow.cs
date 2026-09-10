@@ -160,7 +160,7 @@ namespace ModelExplorer
                 Background = theme.PanelBrush,
                 BorderBrush = theme.BorderBrush,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(8),
+                CornerRadius = new CornerRadius(0),
                 Padding = new Thickness(14, 12, 14, 12),
                 Margin = new Thickness(0, 6, 0, 6)
             };
@@ -199,7 +199,7 @@ namespace ModelExplorer
             Border sourceBox = new Border
             {
                 Background = theme.PanelActiveBrush,
-                CornerRadius = new CornerRadius(8),
+                CornerRadius = new CornerRadius(0),
                 Padding = new Thickness(12, 10, 12, 10),
                 VerticalAlignment = VerticalAlignment.Stretch,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -286,7 +286,7 @@ namespace ModelExplorer
             Border rightBox = new Border
             {
                 Background = theme.PanelActiveBrush,
-                CornerRadius = new CornerRadius(8),
+                CornerRadius = new CornerRadius(0),
                 Padding = new Thickness(12, 10, 12, 10),
                 VerticalAlignment = VerticalAlignment.Stretch,
                 HorizontalAlignment = HorizontalAlignment.Stretch,
@@ -446,7 +446,7 @@ namespace ModelExplorer
                 Border item = new Border
                 {
                     Background = theme.PanelActiveBrush,
-                    CornerRadius = new CornerRadius(5),
+                    CornerRadius = new CornerRadius(0),
                     Padding = new Thickness(10, 6, 10, 6),
                     Margin = new Thickness(0, 3, 0, 3)
                 };

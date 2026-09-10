@@ -102,7 +102,7 @@ namespace ModelExplorer
                 Background = theme.PanelBrush,
                 BorderBrush = theme.BorderBrush,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(8),
+                CornerRadius = new CornerRadius(0),
                 Padding = new Thickness(10, 8, 10, 8),
                 Margin = new Thickness(0, 7, 0, 6),
                 Child = _nameBox
@@ -218,7 +218,7 @@ namespace ModelExplorer
                 Width = 100,
                 Height = 34,
                 Background = primary ? ThemeManager.Current.AccentBrush : ThemeManager.Current.PanelActiveBrush,
-                Foreground = primary ? new SolidColorBrush(Color.FromRgb(0x15, 0x15, 0x15)) : ThemeManager.Current.TextBrush,
+                Foreground = primary ? ThemeManager.Current.OnAccentBrush : ThemeManager.Current.TextBrush,
                 BorderThickness = new Thickness(0),
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 12,

@@ -7,7 +7,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyTitle>Model Explorer CLI</AssemblyTitle>
     <Product>Model Explorer</Product>
-    <Version>3.0.0</Version>
+    <Version>3.1.0</Version>
   </PropertyGroup>
 
   <!--
