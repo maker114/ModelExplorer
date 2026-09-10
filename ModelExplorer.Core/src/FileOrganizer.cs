@@ -33,6 +33,18 @@ namespace ModelExplorer
         public List<FileMove> Moves { get; private set; }
         public int StlMoved { get; set; }
         public int ThreeMfMoved { get; set; }
+
+        /// <summary>
+        /// 已经位于分类文件夹中、因此不需要移动的 STL / 3MF 数量。
+        ///
+        /// V3.0.4 新增：整理功能会跳过分类文件夹，所以当工程已经整理过时
+        /// 结果是“移动 0 个”。此前界面在这种情况下什么都不显示，日志又只写
+        /// “STL 0 个，3MF 0 个”，很容易被误解成“没扫描到 STL / 3MF 文件”。
+        /// 有了这两个计数就能明确告诉用户：扫描到了，只是已经整理好了。
+        /// </summary>
+        public int StlAlreadyOrganized { get; set; }
+        public int ThreeMfAlreadyOrganized { get; set; }
+
         public List<string> CreatedFolders { get; private set; }
         public List<string> DeletedFolders { get; private set; }
         public List<OrganizeLogEntry> Logs { get; private set; }
@@ -52,11 +64,20 @@ namespace ModelExplorer
             OrganizeResult result = new OrganizeResult();
             string stlRoot = Path.Combine(root, WorkspaceNames.StlFolderName);
             string threeMfRoot = Path.Combine(root, WorkspaceNames.ThreeMfFolderName);
-            Directory.CreateDirectory(stlRoot);
-            Directory.CreateDirectory(threeMfRoot);
+
+            // V3.0.4：不再预先创建工程根目录下的分类文件夹。
+            // 目标目录在真正要移动文件时才创建（见下方 lazy 创建），因此
+            // “没有文件需要整理”时本功能完全不写盘 —— 既不会在只读工程目录上
+            // 抛出「访问被拒绝」而让整个整理失败，也不会留下需要再删掉的空文件夹。
 
             Dictionary<string, OrganizeLogEntry> logs =
                 new Dictionary<string, OrganizeLogEntry>(StringComparer.OrdinalIgnoreCase);
+
+            // 先统计“开始本次整理之前”已位于分类文件夹中的文件数量。
+            // 必须在移动之前统计：否则本次刚移入的文件会被重复计入，
+            // 让“已有 N 个位于分类文件夹中”这句话失真。
+            CountExistingOrganized(root, result);
+
             Stack<string> stack = new Stack<string>();
             stack.Push(root);
 
@@ -135,6 +156,84 @@ namespace ModelExplorer
             });
             result.Logs.AddRange(ordered);
             return result;
+        }
+
+        /// <summary>
+        /// 整理开始前，遍历工程目录，统计分类文件夹里已存在的 STL / 3MF 数量。
+        /// 分类文件夹的整棵子树都会被整理跳过，所以这里也递归统计其内部文件。
+        /// </summary>
+        private static void CountExistingOrganized(string root, OrganizeResult result)
+        {
+            Stack<string> stack = new Stack<string>();
+            stack.Push(root);
+
+            while (stack.Count > 0)
+            {
+                string dir = stack.Pop();
+
+                string[] subDirs;
+                try
+                {
+                    subDirs = Directory.GetDirectories(dir);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (string subDir in subDirs)
+                {
+                    if (WorkspaceNames.IsClassificationPath(subDir))
+                    {
+                        CountClassificationFolder(subDir, result);
+                    }
+                    else
+                    {
+                        stack.Push(subDir);
+                    }
+                }
+            }
+        }
+
+        private static void CountClassificationFolder(string directory, OrganizeResult result)
+        {
+            string[] files;
+            try
+            {
+                files = Directory.GetFiles(directory);
+            }
+            catch
+            {
+                return;
+            }
+
+            foreach (string file in files)
+            {
+                string ext = Path.GetExtension(file).ToLowerInvariant();
+                if (ext == ".stl")
+                {
+                    result.StlAlreadyOrganized++;
+                }
+                else if (ext == ".3mf")
+                {
+                    result.ThreeMfAlreadyOrganized++;
+                }
+            }
+
+            string[] subDirs;
+            try
+            {
+                subDirs = Directory.GetDirectories(directory);
+            }
+            catch
+            {
+                return;
+            }
+
+            foreach (string subDir in subDirs)
+            {
+                CountClassificationFolder(subDir, result);
+            }
         }
 
         /// <summary>移动到目标目录；同名文件自动追加 _2、_3 序号，绝不覆盖。</summary>

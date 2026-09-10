@@ -619,7 +619,9 @@ namespace ModelExplorer
                         {
                             Log("删除空分类文件夹：" + string.Join("，", result.DeletedFolders.ToArray()));
                         }
-                        Log("整理完成：STL " + result.StlMoved + " 个，3MF " + result.ThreeMfMoved + " 个");
+                        Log("整理完成：移动 STL " + result.StlMoved + " 个、3MF " + result.ThreeMfMoved +
+                            " 个；已有 STL " + result.StlAlreadyOrganized + " 个、3MF " +
+                            result.ThreeMfAlreadyOrganized + " 个位于分类文件夹中");
                         SetStatusText("整理完成");
                         _lastMoves.Clear();
                         _lastMoves.AddRange(result.Moves);
@@ -645,6 +647,19 @@ namespace ModelExplorer
                                 result.DeletedFolders);
                             reportWindow.Owner = this;
                             reportWindow.ShowDialog();
+                        }
+                        else
+                        {
+                            // V3.0.4：没有任何文件需要移动时也要给出明确反馈，
+                            // 否则界面上什么都不发生，容易被误认为“扫描不到 STL / 3MF”。
+                            ConfirmDialog.ShowInfo(
+                                this,
+                                "本次没有需要移动的文件。\n\n" +
+                                "已扫描到 STL " + result.StlAlreadyOrganized + " 个、3MF " +
+                                result.ThreeMfAlreadyOrganized + " 个，均已位于「" +
+                                WorkspaceNames.StlFolderName + "」或「" + WorkspaceNames.ThreeMfFolderName + "」中。\n\n" +
+                                "整理只处理散落在分类文件夹之外的文件，已在分类文件夹中的不会被再次移动。",
+                                "整理完成");
                         }
                         BeginScan(root);
                     }));
@@ -834,7 +849,7 @@ namespace ModelExplorer
                 {
                     List<ModelFile> files = ProjectScanner.Scan(root);
                     List<ProjectNameChange> changes = ProjectNamePlanner.BuildPlan(root, files);
-                    Dispatcher.BeginInvoke(new Action(() => OpenProjectNamePlan(changes)));
+                    Dispatcher.BeginInvoke(new Action(() => OpenProjectNamePlan(files, changes)));
                 }
                 catch (Exception ex)
                 {
@@ -846,11 +861,19 @@ namespace ModelExplorer
             });
         }
 
-        private void OpenProjectNamePlan(List<ProjectNameChange> changes)
+        private void OpenProjectNamePlan(List<ModelFile> files, List<ProjectNameChange> changes)
         {
             if (changes.Count == 0)
             {
-                FinishProjectNameCheck("工程名检查完成，无需修改", "");
+                // V3.0.4：没有需要改名时也要给出明确反馈（原来只写日志、不弹窗，
+                // 界面上毫无反应，容易被误认为功能不可用）。
+                ConfirmDialog.ShowInfo(
+                    this,
+                    "工程名检查完成，没有需要修改的文件。\n\n" +
+                    DescribeScanResult(files) +
+                    "\n\n所有文件的工程名前缀都已符合当前规则。",
+                    "工程名检查完成");
+                FinishProjectNameCheck("工程名检查完成，无需修改", DescribeScanResult(files));
                 return;
             }
 
@@ -935,6 +958,40 @@ namespace ModelExplorer
                     }
                 }));
             });
+        }
+
+        /// <summary>
+        /// 把扫描结果概括成一句话，用于“无需修改 / 无需整理”这类反馈，
+        /// 让用户确认程序确实扫描过了，而不是没有反应。
+        /// </summary>
+        private static string DescribeScanResult(List<ModelFile> files)
+        {
+            int parts = 0;
+            int assemblies = 0;
+            int stls = 0;
+            int threeMfs = 0;
+            foreach (ModelFile file in files)
+            {
+                if (file.Kind == ModelKind.Part)
+                {
+                    parts++;
+                }
+                else if (file.Kind == ModelKind.Assembly)
+                {
+                    assemblies++;
+                }
+                else if (file.Kind == ModelKind.Stl)
+                {
+                    stls++;
+                }
+                else
+                {
+                    threeMfs++;
+                }
+            }
+
+            return "已扫描到 " + files.Count + " 个文件：零件 " + parts + " 个、装配体 " + assemblies +
+                   " 个、STL " + stls + " 个、3MF " + threeMfs + " 个";
         }
 
         private void FinishProjectNameCheck(string message, string detail)

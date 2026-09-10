@@ -9,9 +9,21 @@ namespace ModelExplorer
     {
         public bool Confirmed { get; private set; }
 
+        private readonly bool _infoOnly;
+
         public ConfirmDialog(string message, string titleText)
+            : this(message, titleText, false)
+        {
+        }
+
+        /// <param name="infoOnly">
+        /// true 时只显示一个「知道了」按钮，用于“操作已完成、但没有需要改动的内容”这类告知，
+        /// 避免弹出一个带「取消」的确认框让人误以为还有操作没做。
+        /// </param>
+        public ConfirmDialog(string message, string titleText, bool infoOnly)
         {
             Confirmed = false;
+            _infoOnly = infoOnly;
             Title = titleText;
             WindowStyle = WindowStyle.None;
             AllowsTransparency = true;
@@ -24,6 +36,14 @@ namespace ModelExplorer
 
             BuildUi(message, titleText);
             UiAnimation.FadeInOnOpen(this);
+        }
+
+        /// <summary>弹出一个纯告知对话框（只有一个「知道了」按钮）。</summary>
+        public static void ShowInfo(Window owner, string message, string titleText)
+        {
+            ConfirmDialog dialog = new ConfirmDialog(message, titleText, true);
+            dialog.Owner = owner;
+            dialog.ShowDialog();
         }
 
         private void BuildUi(string message, string titleText)
@@ -77,8 +97,12 @@ namespace ModelExplorer
             Button cancel = MakeButton("取消", false);
             cancel.Margin = new Thickness(0, 0, 10, 0);
             cancel.Click += delegate { Close(); };
-            footer.Children.Add(cancel);
-            Button ok = MakeButton("确定", true);
+            if (!_infoOnly)
+            {
+                footer.Children.Add(cancel);
+            }
+
+            Button ok = MakeButton(_infoOnly ? "知道了" : "确定", true);
             ok.Click += delegate
             {
                 Confirmed = true;

@@ -243,6 +243,33 @@ namespace ModelExplorer.Tests
                     File.Exists(Path.Combine(root, "Sub", "STL文件夹", "D.stl")));
             });
 
+            // V3.0.4 回归：工程已经整理过时，要能报告“已有多少文件在分类文件夹里”，
+            // 否则界面只能显示“移动 0 个”，会被误读成没有扫描到 STL / 3MF。
+            WithProject(new[]
+            {
+                "A.sldprt",
+                @"STL文件夹\A.stl",
+                @"STL文件夹\B.stl",
+                @"子工程\STL文件夹\C.stl",
+                @"3MF文件夹\A.3mf"
+            }, delegate(string root)
+            {
+                OrganizeResult result = FileOrganizer.Organize(root, false);
+                CheckEqual("已整理工程：移动 0 个", 0, result.Moves.Count);
+                CheckEqual("已整理工程：STL 已归类计数（含子工程）", 3, result.StlAlreadyOrganized);
+                CheckEqual("已整理工程：3MF 已归类计数", 1, result.ThreeMfAlreadyOrganized);
+            });
+
+            // 混合场景：散落文件照旧移动，已在分类文件夹中的只计数不移动
+            WithProject(new[] { @"STL文件夹\Done.stl", "Loose.stl" }, delegate(string root)
+            {
+                OrganizeResult result = FileOrganizer.Organize(root, false);
+                CheckEqual("混合场景：移动 1 个", 1, result.StlMoved);
+                CheckEqual("混合场景：已归类 1 个", 1, result.StlAlreadyOrganized);
+                CheckTrue("混合场景：散落文件被移入分类文件夹",
+                    File.Exists(Path.Combine(root, "STL文件夹", "Loose.stl")));
+            });
+
             // 撤销：逆序回退
             WithProject(new[] { "A.stl", "B.stl" }, delegate(string root)
             {
