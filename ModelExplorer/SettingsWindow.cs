@@ -15,7 +15,7 @@ namespace ModelExplorer
         private TextBox _solidWorksPathBox;
         private ComboBox _themeCombo;
         private ComboBox _fontSizeCombo;
-        private CheckBox _binaryStlCheck;
+        private ToggleSwitch _binaryStlSwitch;
         private ComboBox _stlUnitsCombo;
         private ComboBox _stlQualityCombo;
 
@@ -32,7 +32,7 @@ namespace ModelExplorer
             Background = Brushes.Transparent;
             ResizeMode = ResizeMode.NoResize;
             Width = 560;
-            Height = 680;
+            Height = 720;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Icon = AppIcon.WindowIcon;
 
@@ -180,16 +180,36 @@ namespace ModelExplorer
                 Margin = new Thickness(0, 6, 0, 10)
             });
 
-            _binaryStlCheck = new CheckBox
+            Grid binaryRow = new Grid { Margin = new Thickness(0, 0, 0, 6) };
+            binaryRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            binaryRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            TextBlock binaryLabel = new TextBlock
             {
-                Content = "使用二进制 STL",
-                IsChecked = _source.BinaryStl,
+                Text = "使用二进制 STL",
                 Foreground = theme.TextBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 12,
-                Margin = new Thickness(0, 0, 0, 12)
+                VerticalAlignment = VerticalAlignment.Center
             };
-            body.Children.Add(_binaryStlCheck);
+            Grid.SetColumn(binaryLabel, 0);
+            binaryRow.Children.Add(binaryLabel);
+
+            // 与主界面「转换设置」使用同一套拨钮开关外观
+            _binaryStlSwitch = new ToggleSwitch
+            {
+                IsChecked = _source.UseBinaryStl,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(_binaryStlSwitch, 1);
+            binaryRow.Children.Add(_binaryStlSwitch);
+            body.Children.Add(binaryRow);
+
+            body.Children.Add(HintText(
+                "开启时导出二进制 STL，体积小、加载快；关闭后导出 ASCII 文本格式，文件体积约为二进制的 5～10 倍。",
+                theme,
+                2,
+                18));
 
             Grid stlOptionsRow = new Grid();
             stlOptionsRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -223,6 +243,12 @@ namespace ModelExplorer
             stlOptionsRow.Children.Add(qualityPanel);
 
             body.Children.Add(stlOptionsRow);
+
+            body.Children.Add(HintText(
+                "单位决定导出模型的尺寸基准，需与切片软件保持一致；质量越高三角面越密、模型越精细，文件也越大。",
+                theme,
+                8,
+                0));
 
             body.Children.Add(SectionTitle("外观预设", 22));
             _themeCombo = new ComboBox
@@ -352,7 +378,7 @@ namespace ModelExplorer
                 LastDir = _source.LastDir,
                 KeepHistory = _source.KeepHistory,
                 OpenBambu = _source.OpenBambu,
-                BinaryStl = _binaryStlCheck.IsChecked == true,
+                BinaryStl = _binaryStlSwitch.IsChecked == true,
                 StlUnits = (string)_stlUnitsCombo.SelectedItem,
                 StlQuality = (string)_stlQualityCombo.SelectedItem,
                 BambuPath = _bambuPathBox.Text.Trim(),
@@ -373,6 +399,20 @@ namespace ModelExplorer
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 11,
                 Margin = new Thickness(0, 0, 0, 4)
+            };
+        }
+
+        /// <summary>控件下方的小字说明，用于解释该设置的作用。</summary>
+        private static TextBlock HintText(string text, AppTheme theme, double topMargin, double bottomMargin)
+        {
+            return new TextBlock
+            {
+                Text = text,
+                Foreground = theme.MutedBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 10,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, topMargin, 0, bottomMargin)
             };
         }
 

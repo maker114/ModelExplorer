@@ -522,7 +522,7 @@ namespace ModelExplorer
             {
                 KeepHistory = KeepHistoryCheck.IsChecked == true,
                 OpenBambu = OpenBambuCheck.IsChecked == true,
-                BinaryStl = _config.BinaryStl,
+                BinaryStl = _config.UseBinaryStl,
                 StlUnits = _config.StlUnits,
                 StlQuality = _config.StlQuality
             };

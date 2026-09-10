@@ -21,9 +21,25 @@ namespace ModelExplorer
 
         // ---- STL 导出（GUI 开关、插件与 CLI 共用） ----
         public bool KeepHistory { get; set; }
-        public bool BinaryStl { get; set; }
+
+        /// <summary>
+        /// 是否导出二进制 STL。
+        ///
+        /// 必须可空：v2.4.1 及更早版本的 config.json 里**没有**这个字段，
+        /// 若用 bool，反序列化缺失字段会得到 false，导致升级后主程序从
+        /// “固定二进制”静默变成 ASCII（文件体积约为二进制的 5～10 倍）。
+        /// 缺失（null）表示沿用旧行为，即二进制。请统一用 <see cref="UseBinaryStl"/> 取值。
+        /// </summary>
+        public bool? BinaryStl { get; set; }
+
         public string StlUnits { get; set; }
         public string StlQuality { get; set; }
+
+        /// <summary>实际生效的二进制开关：只有显式写成 false 才关闭。</summary>
+        public bool UseBinaryStl
+        {
+            get { return BinaryStl != false; }
+        }
 
         // ---- 外部程序路径 ----
         public string BambuPath { get; set; }

@@ -5,7 +5,7 @@
     <RootNamespace>ModelExplorer.Tests</RootNamespace>
     <AssemblyName>ModelExplorer.Tests</AssemblyName>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>3.0.0</Version>
+    <Version>3.0.1</Version>
   </PropertyGroup>
 
   <!--
@@ -15,6 +15,11 @@
   -->
   <ItemGroup>
     <ProjectReference Include="..\ModelExplorer.Core\ModelExplorer.Core.csproj" />
+  </ItemGroup>
+
+  <!-- 配置缺省值测试需要按真实反序列化路径构造“旧版配置”（缺少字段的 JSON） -->
+  <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
   </ItemGroup>
 
 </Project>

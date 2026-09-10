@@ -35,7 +35,7 @@ namespace ModelExplorer
             if (config != null)
             {
                 options.KeepHistory = config.KeepHistory;
-                options.BinaryStl = config.BinaryStl;
+                options.BinaryStl = config.UseBinaryStl;
                 options.StlUnits = config.StlUnits;
                 options.StlQuality = config.StlQuality;
             }

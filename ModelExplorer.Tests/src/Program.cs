@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Web.Script.Serialization;
 using ModelExplorer;
 
 namespace ModelExplorer.Tests
@@ -32,6 +33,7 @@ namespace ModelExplorer.Tests
             ProjectScannerTests();
             FileOrganizerTests();
             PathHelpersTests();
+            ConfigDefaultTests();
 
             Console.WriteLine();
             Console.WriteLine("通过 " + _passed + " 项，失败 " + _failed + " 项。");
@@ -251,6 +253,38 @@ namespace ModelExplorer.Tests
                 CheckTrue("A.stl 回到根目录", File.Exists(Path.Combine(root, "A.stl")));
                 CheckTrue("B.stl 回到根目录", File.Exists(Path.Combine(root, "B.stl")));
             });
+        }
+
+        // ---------------------------------------------------------------- 配置缺省值
+
+        /// <summary>
+        /// 回归保护：v2.4.1 及更早版本的 config.json 里没有 BinaryStl 字段。
+        /// 若该字段不可空，缺失字段会被反序列化成 false，导致升级到 v3.0.0 后
+        /// 主程序从“固定二进制”静默变成 ASCII STL（体积约为二进制的 5～10 倍）。
+        /// </summary>
+        private static void ConfigDefaultTests()
+        {
+            JavaScriptSerializer serializer = new JavaScriptSerializer();
+
+            // 模拟 v2.4.1 写出的配置：没有 BinaryStl / StlUnits / StlQuality
+            AppConfig legacy = serializer.Deserialize<AppConfig>(
+                "{\"LastDir\":\"D:\\\\model\",\"Theme\":\"暗夜蓝\",\"FontSize\":14,\"KeepHistory\":false}");
+            CheckTrue("旧配置缺少 BinaryStl 字段时反序列化为 null", legacy.BinaryStl == null);
+            CheckTrue("旧配置仍按二进制导出", legacy.UseBinaryStl);
+
+            AppConfig explicitOff = serializer.Deserialize<AppConfig>("{\"BinaryStl\":false}");
+            CheckFalse("显式 false 时关闭二进制", explicitOff.UseBinaryStl);
+
+            AppConfig explicitOn = serializer.Deserialize<AppConfig>("{\"BinaryStl\":true}");
+            CheckTrue("显式 true 时开启二进制", explicitOn.UseBinaryStl);
+
+            AppConfig defaults = AppConfig.CreateDefault();
+            CheckTrue("默认配置为二进制", defaults.UseBinaryStl);
+            CheckEqual("默认单位", "mm", defaults.StlUnits);
+            CheckEqual("默认质量", "Fine", defaults.StlQuality);
+
+            AppConfig roundTrip = serializer.Deserialize<AppConfig>(serializer.Serialize(defaults));
+            CheckTrue("默认配置序列化往返后仍为二进制", roundTrip.UseBinaryStl);
         }
 
         private static void PathHelpersTests()

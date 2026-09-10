@@ -54,7 +54,7 @@ namespace ModelExplorerAddin
 
             _binaryStl = new CheckBox();
             _binaryStl.Text = "使用二进制 STL";
-            _binaryStl.Checked = settings.BinaryStl;
+            _binaryStl.Checked = settings.UseBinaryStl;
             _binaryStl.SetBounds(24, 92, 220, 24);
             Controls.Add(_binaryStl);
 

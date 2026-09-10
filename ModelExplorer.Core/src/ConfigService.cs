@@ -58,6 +58,7 @@ namespace ModelExplorer
                         config.OpenBambu = loaded.OpenBambu;
                         config.ProjectNameUnchecked = loaded.ProjectNameUnchecked ?? new List<string>();
                         config.KeepHistory = loaded.KeepHistory;
+                        // 保持可空：字段缺失（旧版配置）时为 null，由 UseBinaryStl 解释为“二进制”
                         config.BinaryStl = loaded.BinaryStl;
                         config.StlUnits = string.IsNullOrEmpty(loaded.StlUnits) ? AppConfig.DefaultStlUnits : loaded.StlUnits;
                         config.StlQuality = string.IsNullOrEmpty(loaded.StlQuality) ? AppConfig.DefaultStlQuality : loaded.StlQuality;
@@ -143,7 +144,7 @@ namespace ModelExplorer
                     }
                     else if (key == "binarystl")
                     {
-                        config.BinaryStl = ParseBool(value, config.BinaryStl);
+                        config.BinaryStl = ParseBool(value, config.UseBinaryStl);
                     }
                     else if (key == "stlunits")
                     {
