@@ -4,10 +4,14 @@
 #   旧流程靠人工把 exe 覆盖进 dist\ModelExplorer-2.0.1-portable\，
 #   目录名停留在 2.0.1 而内容已是 2.4.1（Git 因忽略 dist\ 也无法发现）。
 #   现在目录名由程序集版本号推导，版本与产物必然一致。
+#
+# v3.0.3 起：发布后自动清理 dist 里的旧版本目录，默认只保留最新 3 个
+#   （当前版本 + 2 个历史版本），避免目录无限堆积。用 -KeepVersions 调整。
 
 param(
     [string]$Configuration = 'Release',
-    [switch]$SkipTests
+    [switch]$SkipTests,
+    [int]$KeepVersions = 3
 )
 
 $ErrorActionPreference = 'Stop'
@@ -50,7 +54,13 @@ $packageName = "ModelExplorer-$version-portable"
 $package = Join-Path $distRoot $packageName
 
 if (Test-Path $package) {
-    Remove-Item $package -Recurse -Force
+    try {
+        Remove-Item $package -Recurse -Force -ErrorAction Stop
+    }
+    catch {
+        throw ("无法覆盖 $packageName：该版本的程序可能正在运行（目录内的 exe / dll 被占用）。" +
+               "请先关闭 ModelExplorer 再重新发布。原始错误：$($_.Exception.Message)")
+    }
 }
 New-Item -ItemType Directory -Force -Path $package | Out-Null
 
@@ -115,4 +125,13 @@ Model Explorer $version 便携版
 
 Write-Host ''
 Write-Host "已发布：$package"
+
+# --- 清理旧版本目录：默认只保留最新 3 个（当前版本 + 2 个历史版本） ---
+# 规则见 prune-dist.ps1。清理失败（例如某个旧版本正在运行、目录被占用）
+# 只给出提示，不让整个发布失败。
+& (Join-Path $root 'prune-dist.ps1') -DistRoot $distRoot -KeepVersions $KeepVersions
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning '旧版本目录未能全部清理；关闭正在运行的程序后可单独重跑 prune-dist.ps1。'
+}
+
 Get-ChildItem $package | Select-Object Name, @{Name = 'MB'; Expression = { [math]::Round($_.Length / 1MB, 2) } } | Format-Table -AutoSize

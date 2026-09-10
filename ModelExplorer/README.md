@@ -419,6 +419,21 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 powershell -ExecutionPolicy Bypass -File .\publish.ps1
 ```
 
+发布结束后会自动清理 `dist\` 中的旧版本：**默认只保留最新 3 个版本目录**
+（当前版本 + 2 个历史版本），更旧的删除。也可以单独运行清理：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\prune-dist.ps1
+powershell -ExecutionPolicy Bypass -File .\prune-dist.ps1 -KeepVersions 2   # 只保留 2 个
+```
+
+`prune-dist.ps1` 依据目录名里的**版本号**排序（而不是修改时间），因此手工重排过目录
+也不会误删较新的版本。若某个旧版本的程序正在运行、目录被占用，脚本只提示、不删除，
+关闭该程序后重跑即可。
+
+> 发布前请先关闭正在运行的 ModelExplorer：`publish.ps1` 需要覆盖同名版本目录，
+> 程序在运行时目录内的 exe / dll 被占用，脚本会明确提示这一点而不是抛出原始错误。
+
 单独构建主程序仍可双击 `ModelExplorer\build.bat`。也可用 Visual Studio / VS Code
 打开 `ModelExplorer.sln`，5 个工程全部已纳入。
 
