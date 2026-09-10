@@ -105,7 +105,7 @@ namespace ModelExplorer
                 Width = 100,
                 Height = 34,
                 Background = primary ? ThemeManager.Current.AccentBrush : ThemeManager.Current.PanelActiveBrush,
-                Foreground = primary ? ThemeManager.Current.OnAccentBrush : ThemeManager.Current.TextBrush,
+                Foreground = primary ? new SolidColorBrush(Color.FromRgb(0x15, 0x15, 0x15)) : ThemeManager.Current.TextBrush,
                 BorderThickness = new Thickness(0),
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 12,

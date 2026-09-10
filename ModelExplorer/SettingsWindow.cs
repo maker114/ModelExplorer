@@ -112,7 +112,7 @@ namespace ModelExplorer
                 Background = theme.PanelBrush,
                 BorderBrush = theme.BorderBrush,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(0),
+                CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(8, 6, 8, 6),
                 Child = _bambuPathBox
             };
@@ -156,7 +156,7 @@ namespace ModelExplorer
                 Background = theme.PanelBrush,
                 BorderBrush = theme.BorderBrush,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(0),
+                CornerRadius = new CornerRadius(8),
                 Padding = new Thickness(8, 6, 8, 6),
                 Child = _solidWorksPathBox
             };
@@ -412,7 +412,7 @@ namespace ModelExplorer
                 Width = width,
                 Height = height,
                 Background = primary ? ThemeManager.Current.AccentBrush : ThemeManager.Current.PanelActiveBrush,
-                Foreground = primary ? ThemeManager.Current.OnAccentBrush : ThemeManager.Current.TextBrush,
+                Foreground = primary ? new SolidColorBrush(Color.FromRgb(0x15, 0x15, 0x15)) : ThemeManager.Current.TextBrush,
                 BorderThickness = new Thickness(0),
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 12,

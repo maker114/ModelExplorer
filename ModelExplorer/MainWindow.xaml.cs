@@ -70,25 +70,19 @@ namespace ModelExplorer
             Resources["MutedBrush"] = ThemeManager.Current.MutedBrush;
             Resources["AccentBrush"] = ThemeManager.Current.AccentBrush;
             Resources["AccentHoverBrush"] = ThemeManager.Current.AccentHoverBrush;
-            Resources["OnAccentBrush"] = ThemeManager.Current.OnAccentBrush;
             Resources["PartBrush"] = ThemeManager.Current.PartBrush;
             Resources["AssemblyBrush"] = ThemeManager.Current.AssemblyBrush;
             Resources["StlBrush"] = ThemeManager.Current.StlBrush;
             Resources["SuccessBrush"] = ThemeManager.Current.SuccessBrush;
             Resources["ErrorBrush"] = ThemeManager.Current.ErrorBrush;
             Resources["CodeBrush"] = ThemeManager.Current.CodeBrush;
-            Resources["SidebarTextBrush"] = ThemeManager.Current.SidebarTextBrush;
-            Resources["SidebarMutedBrush"] = ThemeManager.Current.SidebarMutedBrush;
-            Resources["CodeTextBrush"] = ThemeManager.Current.CodeTextBrush;
-            Resources["ChromeHoverBrush"] = ThemeManager.Current.ChromeHoverBrush;
             Application app = Application.Current;
             if (app != null)
             {
-                // 滚动条：纸色轨道 + 灰色滑块 + 黄色悬停 + 墨色按压
-                app.Resources["ScrollBarTrackBrush"] = ThemeManager.Current.BgBrush;
-                app.Resources["ScrollBarThumbBrush"] = ThemeManager.Current.MutedBrush;
-                app.Resources["ScrollBarThumbHoverBrush"] = ThemeManager.Current.AccentBrush;
-                app.Resources["ScrollBarThumbPressedBrush"] = ThemeManager.Current.TextBrush;
+                app.Resources["ScrollBarTrackBrush"] = ThemeManager.Current.CodeBrush;
+                app.Resources["ScrollBarThumbBrush"] = ThemeManager.Current.BorderBrush;
+                app.Resources["ScrollBarThumbHoverBrush"] = ThemeManager.Current.PanelActiveBrush;
+                app.Resources["ScrollBarThumbPressedBrush"] = ThemeManager.Current.AccentBrush;
             }
         }
 

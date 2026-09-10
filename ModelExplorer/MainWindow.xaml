@@ -17,38 +17,29 @@
         UseLayoutRounding="True"
         SnapsToDevicePixels="True">
   <Window.Resources>
-    <local:KindBadgeFillConverter x:Key="KindBadgeFillConverter" />
-    <local:KindBadgeTextConverter x:Key="KindBadgeTextConverter" />
-
-    <!-- 黑白灰黄 · 工业机能：白色图纸底 + 黑色骨架 + 灰色细线 + 单一高饱和黄 -->
-    <SolidColorBrush x:Key="BgBrush" Color="#F2F2EF" />
-    <SolidColorBrush x:Key="SidebarBrush" Color="#111111" />
-    <SolidColorBrush x:Key="PanelBrush" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="PanelActiveBrush" Color="#E7E7E1" />
-    <SolidColorBrush x:Key="BorderBrush" Color="#D5D5CE" />
-    <SolidColorBrush x:Key="TextBrush" Color="#111111" />
-    <SolidColorBrush x:Key="MutedBrush" Color="#6E6E66" />
-    <SolidColorBrush x:Key="AccentBrush" Color="#F2D400" />
-    <SolidColorBrush x:Key="AccentHoverBrush" Color="#FFE64D" />
-    <SolidColorBrush x:Key="OnAccentBrush" Color="#111111" />
-    <SolidColorBrush x:Key="PartBrush" Color="#111111" />
-    <SolidColorBrush x:Key="AssemblyBrush" Color="#F2D400" />
-    <SolidColorBrush x:Key="StlBrush" Color="#6E6E66" />
-    <SolidColorBrush x:Key="SuccessBrush" Color="#1E7A4B" />
-    <SolidColorBrush x:Key="ErrorBrush" Color="#C1121F" />
-    <SolidColorBrush x:Key="CodeBrush" Color="#111111" />
-    <!-- 深色底面（页眉 / 左侧导航 / 日志 / 状态栏）上的文字 -->
-    <SolidColorBrush x:Key="SidebarTextBrush" Color="#F5F5F1" />
-    <SolidColorBrush x:Key="SidebarMutedBrush" Color="#9E9E96" />
-    <SolidColorBrush x:Key="CodeTextBrush" Color="#E6E6DF" />
-    <SolidColorBrush x:Key="ChromeHoverBrush" Color="#2A2A2A" />
+    <local:KindBrushConverter x:Key="KindBrushConverter" />
+    <SolidColorBrush x:Key="BgBrush" Color="#101010" />
+    <SolidColorBrush x:Key="SidebarBrush" Color="#161616" />
+    <SolidColorBrush x:Key="PanelBrush" Color="#1C1C1C" />
+    <SolidColorBrush x:Key="PanelActiveBrush" Color="#2A2A2A" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#3A3A3A" />
+    <SolidColorBrush x:Key="TextBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="MutedBrush" Color="#B0B0B0" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#F5C518" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#FFD75E" />
+    <SolidColorBrush x:Key="PartBrush" Color="#E8E8E8" />
+    <SolidColorBrush x:Key="AssemblyBrush" Color="#FFD75E" />
+    <SolidColorBrush x:Key="StlBrush" Color="#8FA8C8" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#4CC38A" />
+    <SolidColorBrush x:Key="ErrorBrush" Color="#FF6B6B" />
+    <SolidColorBrush x:Key="CodeBrush" Color="#0A0A0A" />
 
     <sys:Double x:Key="BadgeFontSize">9</sys:Double>
     <sys:Double x:Key="NameFontSize">11</sys:Double>
     <sys:Double x:Key="MetaFontSize">8</sys:Double>
 
     <Style x:Key="SidebarSectionTitleStyle" TargetType="TextBlock">
-      <Setter Property="Foreground" Value="{DynamicResource SidebarMutedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
       <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
       <Setter Property="FontSize" Value="14" />
       <Setter Property="FontWeight" Value="Bold" />
@@ -66,7 +57,7 @@
       <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="0" />
+      <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="12" />
     </Style>
 
@@ -204,7 +195,7 @@
     <Style x:Key="PrimaryButtonStyle" TargetType="Button"
            BasedOn="{StaticResource ButtonMotionStyle}">
       <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource OnAccentBrush}" />
+      <Setter Property="Foreground" Value="#151515" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Padding" Value="14,9" />
       <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
@@ -216,7 +207,7 @@
           <ControlTemplate TargetType="{x:Type Button}">
             <Border x:Name="bd"
                     Background="{TemplateBinding Background}"
-                    CornerRadius="0"
+                    CornerRadius="7"
                     Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
@@ -235,10 +226,9 @@
 
     <Style x:Key="SecondaryButtonStyle" TargetType="Button"
            BasedOn="{StaticResource ButtonMotionStyle}">
-      <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+      <Setter Property="Background" Value="{DynamicResource PanelActiveBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Padding" Value="14,9" />
       <Setter Property="FontFamily" Value="Microsoft YaHei UI" />
       <Setter Property="FontSize" Value="12" />
@@ -248,16 +238,13 @@
           <ControlTemplate TargetType="{x:Type Button}">
             <Border x:Name="bd"
                     Background="{TemplateBinding Background}"
-                    BorderBrush="{TemplateBinding BorderBrush}"
-                    BorderThickness="{TemplateBinding BorderThickness}"
-                    CornerRadius="0"
+                    CornerRadius="7"
                     Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="bd" Property="Background" Value="{DynamicResource PanelActiveBrush}" />
-                <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource TextBrush}" />
+                <Setter TargetName="bd" Property="Background" Value="#3A4253" />
               </Trigger>
               <Trigger Property="IsEnabled" Value="False">
                 <Setter TargetName="bd" Property="Opacity" Value="0.45" />
@@ -271,7 +258,7 @@
     <Style x:Key="ChromeButtonStyle" TargetType="Button"
            BasedOn="{StaticResource ButtonMotionStyle}">
       <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{DynamicResource SidebarMutedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Width" Value="36" />
       <Setter Property="Height" Value="28" />
@@ -283,13 +270,13 @@
           <ControlTemplate TargetType="{x:Type Button}">
             <Border x:Name="bd"
                     Background="{TemplateBinding Background}"
-                    CornerRadius="0"
+                    CornerRadius="5"
                     Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ChromeHoverBrush}" />
+                <Setter TargetName="bd" Property="Background" Value="#3A4253" />
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -307,30 +294,23 @@
               <Border x:Name="track"
                       Width="46"
                       Height="26"
-                      CornerRadius="0"
-                      Background="{DynamicResource PanelActiveBrush}"
-                      BorderBrush="{DynamicResource BorderBrush}"
-                      BorderThickness="1" />
-              <Border x:Name="thumb"
-                      Width="20"
-                      Height="20"
-                      Background="{DynamicResource PanelBrush}"
-                      BorderBrush="{DynamicResource BorderBrush}"
-                      BorderThickness="1"
-                      HorizontalAlignment="Left"
-                      Margin="3,0,0,0">
-                <Border.RenderTransform>
+                      CornerRadius="13"
+                      Background="#3A4253" />
+              <Ellipse x:Name="thumb"
+                       Width="20"
+                       Height="20"
+                       Fill="#FFFFFF"
+                       HorizontalAlignment="Left"
+                       Margin="3,0,0,0">
+                <Ellipse.RenderTransform>
                   <TranslateTransform x:Name="thumbMove" />
-                </Border.RenderTransform>
-              </Border>
+                </Ellipse.RenderTransform>
+              </Ellipse>
               <ContentPresenter Visibility="Collapsed" />
             </Grid>
             <ControlTemplate.Triggers>
               <Trigger Property="IsChecked" Value="True">
                 <Setter TargetName="track" Property="Background" Value="{DynamicResource AccentBrush}" />
-                <Setter TargetName="track" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
-                <Setter TargetName="thumb" Property="Background" Value="{DynamicResource OnAccentBrush}" />
-                <Setter TargetName="thumb" Property="BorderBrush" Value="{DynamicResource OnAccentBrush}" />
                 <Trigger.EnterActions>
                   <BeginStoryboard>
                     <Storyboard>
@@ -457,9 +437,7 @@
           <ControlTemplate TargetType="{x:Type ListBoxItem}">
             <Border x:Name="bd"
                     Background="Transparent"
-                    BorderBrush="Transparent"
-                    BorderThickness="1"
-                    CornerRadius="0"
+                    CornerRadius="6"
                     Padding="4">
               <ContentPresenter />
             </Border>
@@ -510,7 +488,7 @@
       <Border Background="{DynamicResource PanelBrush}"
               BorderBrush="{DynamicResource BorderBrush}"
               BorderThickness="1"
-              CornerRadius="0"
+              CornerRadius="6"
               Padding="10">
         <StackPanel>
           <Grid>
@@ -520,13 +498,9 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0"
-                    Background="{Binding Kind, Converter={StaticResource KindBadgeFillConverter}}"
-                    CornerRadius="0"
-                    Padding="8,4"
-                    RenderTransformOrigin="0.5,0.5">
-              <Border.RenderTransform>
-                <SkewTransform AngleX="-10" />
-              </Border.RenderTransform>
+                    Background="{DynamicResource PanelActiveBrush}"
+                    CornerRadius="4"
+                    Padding="8,4">
               <Border.Style>
                 <Style TargetType="Border">
                   <Setter Property="VerticalAlignment" Value="Center" />
@@ -540,15 +514,10 @@
                 </Style>
               </Border.Style>
               <TextBlock Text="{Binding TypeLabel}"
-                         Foreground="{Binding Kind, Converter={StaticResource KindBadgeTextConverter}}"
+                         Foreground="{Binding Kind, Converter={StaticResource KindBrushConverter}}"
                          FontSize="{DynamicResource BadgeFontSize}"
                          FontWeight="Bold"
-                         VerticalAlignment="Center"
-                         RenderTransformOrigin="0.5,0.5">
-                <TextBlock.RenderTransform>
-                  <SkewTransform AngleX="10" />
-                </TextBlock.RenderTransform>
-              </TextBlock>
+                         VerticalAlignment="Center" />
             </Border>
             <StackPanel Grid.Column="1"
                         Margin="10,0,0,0"
@@ -581,7 +550,7 @@
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center">
               <TextBlock Text="{Binding UnorganizedText}"
-                         Foreground="{DynamicResource TextBrush}"
+                         Foreground="#FFB340"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="{DynamicResource MetaFontSize}"
                          FontWeight="Bold" />
@@ -618,10 +587,12 @@
           UseLayoutRounding="True">
     <Grid ClipToBounds="True">
       <Border Background="{DynamicResource BgBrush}"
-              CornerRadius="0"
+              CornerRadius="14"
               ClipToBounds="True" />
       <Rectangle Stroke="{DynamicResource BorderBrush}"
                  StrokeThickness="1"
+                 RadiusX="14"
+                 RadiusY="14"
                  SnapsToDevicePixels="True"
                  IsHitTestVisible="False" />
       <Grid Margin="1">
@@ -633,19 +604,19 @@
 
       <Border Grid.Row="0"
               Background="{DynamicResource SidebarBrush}"
-              BorderBrush="{DynamicResource AccentBrush}"
-              BorderThickness="0,0,0,2"
+              BorderBrush="{DynamicResource BorderBrush}"
+              BorderThickness="0,0,0,1"
               MouseLeftButtonDown="Header_MouseLeftButtonDown">
         <Grid Margin="18,10">
           <StackPanel VerticalAlignment="Center">
             <StackPanel Orientation="Horizontal">
               <TextBlock Text="Model Explorer"
-                         Foreground="{DynamicResource SidebarTextBrush}"
+                         Foreground="{DynamicResource TextBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 3.1.0"
+              <TextBlock Text="V 3.0.0"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -654,7 +625,7 @@
                          VerticalAlignment="Bottom" />
             </StackPanel>
             <TextBlock Text="SolidWorks → STL → Bambu Studio → 3MF"
-                       Foreground="{DynamicResource SidebarMutedBrush}"
+                       Foreground="{DynamicResource MutedBrush}"
                        FontFamily="Microsoft YaHei UI"
                        FontSize="11"
                        Margin="0,4,0,0" />
@@ -674,7 +645,7 @@
             <Button Style="{StaticResource ChromeButtonStyle}"
                     Click="Minimize_Click">
               <Path Data="M 0,0 L 16,0"
-                    Stroke="{DynamicResource SidebarMutedBrush}"
+                    Stroke="{DynamicResource MutedBrush}"
                     StrokeThickness="2.4"
                     StrokeStartLineCap="Round"
                     StrokeEndLineCap="Round"
@@ -685,7 +656,7 @@
             <Button Style="{StaticResource ChromeButtonStyle}"
                     Click="Close_Click">
               <Path Data="M 0,0 L 14,14 M 14,0 L 0,14"
-                    Stroke="{DynamicResource SidebarMutedBrush}"
+                    Stroke="{DynamicResource MutedBrush}"
                     StrokeThickness="2.4"
                     StrokeStartLineCap="Round"
                     StrokeEndLineCap="Round"
@@ -781,7 +752,7 @@
                                FontSize="11" FontWeight="Bold" Margin="0,3" />
                   </Grid>
                   <TextBlock Text="点击查看详细统计..."
-                             Foreground="{DynamicResource TextBrush}"
+                             Foreground="{DynamicResource AccentBrush}"
                              FontFamily="Microsoft YaHei UI"
                              FontSize="10"
                              FontWeight="Bold"
@@ -892,7 +863,7 @@
           <Border Background="{DynamicResource PanelBrush}"
                   BorderBrush="{DynamicResource BorderBrush}"
                   BorderThickness="1"
-                  CornerRadius="0"
+                  CornerRadius="8"
                   Padding="8,6">
             <TextBox x:Name="SearchBox"
                      Text="搜索零件或装配体"
@@ -940,7 +911,7 @@
                     </Border>
                     <TextBlock Grid.Column="1"
                                Text="零件"
-                               Foreground="{DynamicResource TextBrush}"
+                               Foreground="{DynamicResource AccentBrush}"
                                FontFamily="Microsoft YaHei UI"
                                FontSize="14"
                                FontWeight="Bold"
@@ -950,25 +921,16 @@
                                Grid.Column="2"
                                Text="[0]"
                                Foreground="{DynamicResource TextBrush}"
-                               FontFamily="Consolas"
+                               FontFamily="Microsoft YaHei UI"
                                FontSize="15"
                                FontWeight="Bold"
                                VerticalAlignment="Center"
                                Margin="10,0,0,0" />
-                    <!-- 工业刻度条：细线 + 末端黄色短标 -->
-                    <Grid Grid.Column="3"
-                          Height="8"
-                          VerticalAlignment="Center"
-                          Margin="12,0,0,0">
-                      <Rectangle Height="1"
-                                 Fill="{DynamicResource BorderBrush}"
-                                 VerticalAlignment="Center" />
-                      <Rectangle Width="18"
-                                 Height="3"
-                                 Fill="{DynamicResource AccentBrush}"
-                                 HorizontalAlignment="Right"
-                                 VerticalAlignment="Center" />
-                    </Grid>
+                    <Border Grid.Column="3"
+                            Height="2"
+                            Background="{DynamicResource BorderBrush}"
+                            VerticalAlignment="Center"
+                            Margin="12,0,0,0" />
                   </Grid>
                 </Expander.Header>
                 <ListBox x:Name="PartList"
@@ -1003,7 +965,7 @@
                     </Border>
                     <TextBlock Grid.Column="1"
                                Text="装配体"
-                               Foreground="{DynamicResource TextBrush}"
+                               Foreground="{DynamicResource AccentBrush}"
                                FontFamily="Microsoft YaHei UI"
                                FontSize="14"
                                FontWeight="Bold"
@@ -1013,25 +975,16 @@
                                Grid.Column="2"
                                Text="[0]"
                                Foreground="{DynamicResource TextBrush}"
-                               FontFamily="Consolas"
+                               FontFamily="Microsoft YaHei UI"
                                FontSize="15"
                                FontWeight="Bold"
                                VerticalAlignment="Center"
                                Margin="10,0,0,0" />
-                    <!-- 工业刻度条：细线 + 末端黄色短标 -->
-                    <Grid Grid.Column="3"
-                          Height="8"
-                          VerticalAlignment="Center"
-                          Margin="12,0,0,0">
-                      <Rectangle Height="1"
-                                 Fill="{DynamicResource BorderBrush}"
-                                 VerticalAlignment="Center" />
-                      <Rectangle Width="18"
-                                 Height="3"
-                                 Fill="{DynamicResource AccentBrush}"
-                                 HorizontalAlignment="Right"
-                                 VerticalAlignment="Center" />
-                    </Grid>
+                    <Border Grid.Column="3"
+                            Height="2"
+                            Background="{DynamicResource BorderBrush}"
+                            VerticalAlignment="Center"
+                            Margin="12,0,0,0" />
                   </Grid>
                 </Expander.Header>
                 <ListBox x:Name="AsmList"
@@ -1066,7 +1019,7 @@
                     </Border>
                     <TextBlock Grid.Column="1"
                                Text="STL 文件"
-                               Foreground="{DynamicResource TextBrush}"
+                               Foreground="{DynamicResource AccentBrush}"
                                FontFamily="Microsoft YaHei UI"
                                FontSize="14"
                                FontWeight="Bold"
@@ -1076,25 +1029,16 @@
                                Grid.Column="2"
                                Text="[0]"
                                Foreground="{DynamicResource TextBrush}"
-                               FontFamily="Consolas"
+                               FontFamily="Microsoft YaHei UI"
                                FontSize="15"
                                FontWeight="Bold"
                                VerticalAlignment="Center"
                                Margin="10,0,0,0" />
-                    <!-- 工业刻度条：细线 + 末端黄色短标 -->
-                    <Grid Grid.Column="3"
-                          Height="8"
-                          VerticalAlignment="Center"
-                          Margin="12,0,0,0">
-                      <Rectangle Height="1"
-                                 Fill="{DynamicResource BorderBrush}"
-                                 VerticalAlignment="Center" />
-                      <Rectangle Width="18"
-                                 Height="3"
-                                 Fill="{DynamicResource AccentBrush}"
-                                 HorizontalAlignment="Right"
-                                 VerticalAlignment="Center" />
-                    </Grid>
+                    <Border Grid.Column="3"
+                            Height="2"
+                            Background="{DynamicResource BorderBrush}"
+                            VerticalAlignment="Center"
+                            Margin="12,0,0,0" />
                   </Grid>
                 </Expander.Header>
                 <ListBox x:Name="StlList"
@@ -1108,7 +1052,7 @@
         </Grid>
 
         <Border Grid.Column="2"
-                Background="{DynamicResource PanelBrush}"
+                Background="{DynamicResource SidebarBrush}"
                 BorderBrush="{DynamicResource BorderBrush}"
                 BorderThickness="1,0,0,0">
           <Grid Margin="16,18,16,16">
@@ -1170,7 +1114,7 @@
             <TextBox x:Name="LogBox"
                      Grid.Row="6"
                      Background="{DynamicResource CodeBrush}"
-                     Foreground="{DynamicResource CodeTextBrush}"
+                     Foreground="#C9D1E0"
                      FontFamily="Consolas"
                      FontSize="10"
                      IsReadOnly="True"
@@ -1184,10 +1128,10 @@
         </Border>
       </Grid>
 
-      <Border Grid.Row="2" Background="{DynamicResource CodeBrush}">
+      <Border Grid.Row="2" Background="#0D1017">
         <TextBlock x:Name="StatusText"
                    Text="就绪"
-                   Foreground="{DynamicResource CodeTextBrush}"
+                   Foreground="{DynamicResource MutedBrush}"
                    FontFamily="Microsoft YaHei UI"
                    FontSize="11"
                    Margin="14,0,0,0"

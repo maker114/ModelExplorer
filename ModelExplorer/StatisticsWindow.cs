@@ -102,7 +102,7 @@ namespace ModelExplorer
             Border row = new Border
             {
                 Background = ThemeManager.Current.PanelActiveBrush,
-                CornerRadius = new CornerRadius(0),
+                CornerRadius = new CornerRadius(6),
                 Padding = new Thickness(10, 8, 10, 8),
                 Margin = new Thickness(0, 4, 0, 4)
             };
@@ -137,7 +137,7 @@ namespace ModelExplorer
                 Background = ThemeManager.Current.PanelBrush,
                 BorderBrush = ThemeManager.Current.BorderBrush,
                 BorderThickness = new Thickness(1),
-                CornerRadius = new CornerRadius(0),
+                CornerRadius = new CornerRadius(6),
                 Padding = new Thickness(10, 8, 10, 8),
                 Margin = new Thickness(0, 4, 0, 4)
             };
@@ -189,7 +189,7 @@ namespace ModelExplorer
                 Width = width,
                 Height = height,
                 Background = ThemeManager.Current.AccentBrush,
-                Foreground = ThemeManager.Current.OnAccentBrush,
+                Foreground = new SolidColorBrush(Color.FromRgb(0x15, 0x15, 0x15)),
                 BorderThickness = new Thickness(0),
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
                 FontSize = 12,

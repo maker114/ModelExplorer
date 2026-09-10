@@ -10,13 +10,7 @@
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <AssemblyTitle>Model Explorer Core</AssemblyTitle>
     <Product>Model Explorer</Product>
-    <Version>3.1.0</Version>
-    <!--
-      Core 需要强名称：SolidWorks 插件是强名称程序集，引用未签名的程序集会产生
-      CS8002 警告；两者共用仓库根目录的密钥文件。
-    -->
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)..\ModelExplorer.snk</AssemblyOriginatorKeyFile>
+    <Version>3.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
