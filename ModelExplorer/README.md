@@ -4,6 +4,61 @@ WPF 版 SolidWorks STL / Bambu Studio 3MF 工作台。
 
 ## 更新报告
 
+### V3.0.0
+
+本次为结构重构版本。界面、按钮、命名规则与整理行为与 V2.4.1 保持一致，
+改动集中在工程结构、共享逻辑与工程化，并首次引入自动化测试。
+
+#### 新增结构
+
+- 新增 `ModelExplorer.Core` 共享库，承载扫描、工程名规则、整理、配置、STL 导出与
+  Bambu Studio 启动；主程序、命令行工具、SolidWorks 插件全部改为引用它。
+- 新增 `ModelExplorer.Tests` 测试工程，覆盖命名规则、扫描标记、归类整理与撤销，共 62 项断言；
+  `build.ps1` / `publish.ps1` 会在构建后自动运行。
+- 新增仓库级 `Directory.Build.props`（统一 net48 / x64 / LangVersion 等）与
+  `.gitattributes`（统一换行符策略），以及根目录 `build.ps1`、`publish.ps1`。
+
+#### 修复的结构缺陷
+
+- **统一分类文件夹命名**：命令行工具原先写入 `STL文件`，而主程序使用 `STL文件夹`，
+  导致 CLI 导出的 STL 在主程序中被误判为 `[未整理]` 并被重复搬移。
+  现在该名称只有 `WorkspaceNames` 一处定义。
+- **补齐缺失依赖**：插件所需的 `SolidWorks.Interop.swpublished.dll` 此前从未进入版本控制，
+  只在编译输出目录里存在，克隆后插件无法编译；现已纳入 `lib\SolidWorks\`。
+- **消除硬编码路径**：`D:\SW2022\SOLIDWORKS\` 原先出现在插件 csproj 与三个构建脚本中；
+  现由 `Directory.Build.props` 的 `SolidWorksLibDir` 单点提供，任意机器均可离线构建。
+- **统一配置**：主程序使用 `config.json`，而插件与 CLI 使用 `ModelExplorerAddin.config`，
+  同一个“保留历史版本”开关在两侧互不生效；现已统一为 `%APPDATA%\ModelExplorer\config.json`，
+  旧配置会一次性自动迁移（原文件改名为 `.migrated` 保留）。
+- **解决方案不再残缺**：`.sln` 原先只挂载主程序，CLI 与插件连 IDE 都识别不到；
+  现在 5 个工程全部纳入，且 CLI / 插件由 `csc.exe` 手工脚本改为标准 `dotnet build`。
+- **删除重复实现**：STL 导出（偏好设置 + `SaveAs3` + 单位/质量映射 + 保留历史命名）此前在
+  主程序、CLI、插件中各写一遍；Bambu 启动与 SendKeys 保存在主程序、CLI 中各写一遍。
+  现已合并到 Core 的 `SolidWorksStlExporter` 与 `BambuStudioLauncher`。
+- **收敛散落规则**：“装配体导出”判定原先在三个文件中各写一遍，现集中于 `AssemblyExportRule`；
+  其中“扫描打标”与“重命名计划”是两套不同语义，刻意保留为两个具名谓词，
+  以免重命名时剥掉已有的 `[装配体导出]` 标记。
+- **消除领域层对 WPF 的依赖**：`ModelFile.TypeBrush` 使领域模型持有 WPF 画刷，
+  扫描逻辑无法脱离界面框架测试；颜色改由界面层 `KindBrushConverter` 负责。
+- **清理死代码**：删除 294 行完全无引用的 `FolderPickerWindow.cs`，以及无引用的
+  `ModelFile.MatchText`。
+- **主界面瘦身**：`MainWindow.xaml.cs` 由 1381 行降至 1126 行，内联的整理流程、
+  两段近乎相同的撤销流程与四个私有辅助方法全部下沉到 Core 并可被测试。
+- **发布目录名与版本一致**：新增 `publish.ps1`，目录名由程序集版本推导
+  （此前 `dist\ModelExplorer-2.0.1-portable\` 中装的已是 2.4.1）。
+
+#### 行为改进
+
+- 设置窗口新增 STL 参数（二进制 STL、单位、质量），此前只能在 SolidWorks 插件里配置。
+- 命令行工具现在会读取设置中的 `SLDWORKS.exe` 路径（此前只依赖 COM 注册）。
+- 插件的设置保存不再覆盖主程序的设置（改为读取完整配置后只修改自己负责的字段）。
+- CLI 的参数与退出码保持与 V2.4.1 一致（0 / 1 / 2 / 3 / 4），现有脚本可继续使用。
+
+#### 升级注意
+
+- 插件程序集版本变为 3.0.0.0，升级后需重新运行 `install.ps1` 才能被 SolidWorks 加载。
+- 插件与 CLI 的旧配置文件会一次性迁移到 `%APPDATA%\ModelExplorer\config.json`。
+
 ### V2.4.1
 
 - 工程名整理弹窗中的子工程名改用小于根工程名的字号，并以圆角矩形标签展示和分隔。
@@ -280,15 +335,35 @@ WPF 版 SolidWorks STL / Bambu Studio 3MF 工作台。
 
 ## 构建
 
-项目已转换为标准 WPF 工程：
+项目为 5 个工程的标准 solution：
 
-- `ModelExplorer.sln` 位于仓库根目录，可用 Visual Studio / VS Code 打开。
-- `ModelExplorer` 是 WPF 工程目录。
-- `App.xaml` + `MainWindow.xaml` 是标准 WPF XAML 入口和主界面。
-- 双击 `build.bat`，使用 `dotnet build ModelExplorer.csproj -c Release` 构建。
-- VS Code 打开仓库后可直接运行构建任务 `build` 或 `run`。
+| 工程 | 说明 |
+| --- | --- |
+| `ModelExplorer.Core` | 共享业务库：扫描、工程名规则、整理、配置、STL 导出、Bambu 启动 |
+| `ModelExplorer` | WPF 主程序（界面与主题） |
+| `ModelExplorerCli` | 命令行转换工具 |
+| `ModelExplorerAddin` | SolidWorks 2022 插件 |
+| `ModelExplorer.Tests` | 测试套件（命名规则、扫描、整理、撤销） |
+
+一键构建并运行测试：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+发布便携版（目录名按程序集版本生成）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\publish.ps1
+```
+
+单独构建主程序仍可双击 `ModelExplorer\build.bat`。也可用 Visual Studio / VS Code
+打开 `ModelExplorer.sln`，5 个工程全部已纳入。
 
 输出到 `bin\Release\`，运行其中的 `ModelExplorer.exe` 即可。
+
+所有工程共享仓库根目录的构建配置：`Directory.Build.props`（目标框架、平台、
+Interop 路径）与 `lib\SolidWorks\`（SolidWorks Interop 程序集的唯一来源）。
 
 ### Visual Studio 2022 XAML 实时预览
 
@@ -303,3 +378,8 @@ WPF 版 SolidWorks STL / Bambu Studio 3MF 工作台。
 - 需要已安装 SolidWorks 2022
 - 需要已安装 Bambu Studio
 - 编译输出目录会包含 SolidWorks Interop DLL，exe 启动时需要它们在同一目录
+- SolidWorks Interop 程序集统一放在仓库根 `lib\SolidWorks\`，更换 SolidWorks 版本时
+  替换该目录内容即可，无需修改工程文件
+- 配置统一保存在 `%APPDATA%\ModelExplorer\config.json`，主程序 / CLI / 插件共用
+- 测试：`powershell -ExecutionPolicy Bypass -File .\build.ps1`，或直接运行
+  `ModelExplorer.Tests\bin\Release\ModelExplorer.Tests.exe`

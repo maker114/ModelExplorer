@@ -521,7 +521,10 @@ namespace ModelExplorer
             ConvertOptions options = new ConvertOptions
             {
                 KeepHistory = KeepHistoryCheck.IsChecked == true,
-                OpenBambu = OpenBambuCheck.IsChecked == true
+                OpenBambu = OpenBambuCheck.IsChecked == true,
+                BinaryStl = _config.BinaryStl,
+                StlUnits = _config.StlUnits,
+                StlQuality = _config.StlQuality
             };
 
             ExportButton.IsEnabled = false;
@@ -604,127 +607,42 @@ namespace ModelExplorer
             {
                 try
                 {
-                    string stlDir = Path.Combine(root, "STL文件夹");
-                    string threeMfDir = Path.Combine(root, "3MF文件夹");
-                    Directory.CreateDirectory(stlDir);
-                    Directory.CreateDirectory(threeMfDir);
-
-                    int stlMoved = 0;
-                    int threeMfMoved = 0;
-                    List<FileMove> moves = new List<FileMove>();
-                    List<string> createdDirs = new List<string>();
-                    Dictionary<string, MoveLogEntry> moveLogs = new Dictionary<string, MoveLogEntry>(StringComparer.OrdinalIgnoreCase);
-                    Stack<string> stack = new Stack<string>();
-                    stack.Push(root);
-
-                    while (stack.Count > 0)
-                    {
-                        string dir = stack.Pop();
-                        string dirName = Path.GetFileName(dir.TrimEnd('\\'));
-                        if (string.Equals(dirName, "STL文件夹", StringComparison.OrdinalIgnoreCase) ||
-                            string.Equals(dirName, "3MF文件夹", StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
-
-                        string[] subDirs;
-                        try
-                        {
-                            subDirs = Directory.GetDirectories(dir);
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-                        foreach (string subDir in subDirs)
-                        {
-                            stack.Push(subDir);
-                        }
-
-                        string[] files;
-                        try
-                        {
-                            files = Directory.GetFiles(dir);
-                        }
-                        catch
-                        {
-                            continue;
-                        }
-                        foreach (string file in files)
-                        {
-                            string ext = Path.GetExtension(file).ToLowerInvariant();
-                            if (ext == ".stl")
-                            {
-                                string targetDir = byFolder
-                                    ? Path.Combine(Path.GetDirectoryName(file), "STL文件夹")
-                                    : stlDir;
-                                if (!Directory.Exists(targetDir))
-                                {
-                                    Directory.CreateDirectory(targetDir);
-                                    createdDirs.Add(RelativeDisplay(root, targetDir));
-                                }
-                                string dest = MoveUnique(file, targetDir);
-                                moves.Add(new FileMove { Source = file, Dest = dest });
-                                RecordMove(moveLogs, file, dest, true);
-                                stlMoved++;
-                            }
-                            else if (ext == ".3mf")
-                            {
-                                string targetDir = byFolder
-                                    ? Path.Combine(Path.GetDirectoryName(file), "3MF文件夹")
-                                    : threeMfDir;
-                                if (!Directory.Exists(targetDir))
-                                {
-                                    Directory.CreateDirectory(targetDir);
-                                    createdDirs.Add(RelativeDisplay(root, targetDir));
-                                }
-                                string dest = MoveUnique(file, targetDir);
-                                moves.Add(new FileMove { Source = file, Dest = dest });
-                                RecordMove(moveLogs, file, dest, false);
-                                threeMfMoved++;
-                            }
-                        }
-                    }
-
-                    List<string> deletedDirs = DeleteEmptyClassificationFolders(root);
+                    OrganizeResult result = FileOrganizer.Organize(root, byFolder);
                     Dispatcher.BeginInvoke(new Action(() =>
                     {
-                        List<MoveLogEntry> logs = new List<MoveLogEntry>(moveLogs.Values);
-                        logs.Sort(delegate(MoveLogEntry a, MoveLogEntry b)
+                        foreach (OrganizeLogEntry entry in result.Logs)
                         {
-                            return string.Compare(a.SourceFolder, b.SourceFolder, StringComparison.OrdinalIgnoreCase);
-                        });
-                        foreach (MoveLogEntry entry in logs)
-                        {
-                            string source = RelativeDisplay(root, entry.SourceFolder);
-                            string target = RelativeDisplay(root, entry.TargetFolder);
-                            Log(source + "：" + entry.StlCount + " 个 STL、" + entry.ThreeMfCount + " 个 3MF → " + target);
+                            Log(entry.SourceFolder + "：" + entry.StlCount + " 个 STL、" +
+                                entry.ThreeMfCount + " 个 3MF → " + entry.TargetFolder);
                         }
-                        List<OrganizeMoveInfo> report = new List<OrganizeMoveInfo>();
-                        foreach (MoveLogEntry entry in logs)
+                        if (result.DeletedFolders.Count > 0)
                         {
-                            report.Add(new OrganizeMoveInfo
-                            {
-                                SourceFolder = RelativeDisplay(root, entry.SourceFolder),
-                                TargetFolder = RelativeDisplay(root, entry.TargetFolder),
-                                StlCount = entry.StlCount,
-                                ThreeMfCount = entry.ThreeMfCount
-                            });
+                            Log("删除空分类文件夹：" + string.Join("，", result.DeletedFolders.ToArray()));
                         }
-                        if (deletedDirs.Count > 0)
-                        {
-                            Log("删除空分类文件夹：" + string.Join("，", deletedDirs.ToArray()));
-                        }
-                        Log("整理完成：STL " + stlMoved + " 个，3MF " + threeMfMoved + " 个");
+                        Log("整理完成：STL " + result.StlMoved + " 个，3MF " + result.ThreeMfMoved + " 个");
                         SetStatusText("整理完成");
                         _lastMoves.Clear();
-                        _lastMoves.AddRange(moves);
-                        UndoOrganizeButton.IsEnabled = moves.Count > 0;
-                        RetargetProjectNameUndoAfterOrganize(moves);
+                        _lastMoves.AddRange(result.Moves);
+                        UndoOrganizeButton.IsEnabled = result.Moves.Count > 0;
+                        RetargetProjectNameUndoAfterOrganize(result.Moves);
                         UndoProjectNameButton.IsEnabled = _lastProjectNameMoves.Count > 0;
-                        if (moves.Count > 0)
+                        if (result.Moves.Count > 0)
                         {
-                            OrganizeReportWindow reportWindow = new OrganizeReportWindow(report, createdDirs, deletedDirs);
+                            List<OrganizeMoveInfo> report = new List<OrganizeMoveInfo>();
+                            foreach (OrganizeLogEntry entry in result.Logs)
+                            {
+                                report.Add(new OrganizeMoveInfo
+                                {
+                                    SourceFolder = entry.SourceFolder,
+                                    TargetFolder = entry.TargetFolder,
+                                    StlCount = entry.StlCount,
+                                    ThreeMfCount = entry.ThreeMfCount
+                                });
+                            }
+                            OrganizeReportWindow reportWindow = new OrganizeReportWindow(
+                                report,
+                                result.CreatedFolders,
+                                result.DeletedFolders);
                             reportWindow.Owner = this;
                             reportWindow.ShowDialog();
                         }
@@ -741,104 +659,6 @@ namespace ModelExplorer
                     }));
                 }
             });
-        }
-
-        private static string MoveUnique(string source, string targetDir)
-        {
-            string target = Path.Combine(targetDir, Path.GetFileName(source));
-            int index = 2;
-            while (File.Exists(target))
-            {
-                string name = Path.GetFileNameWithoutExtension(source);
-                string ext = Path.GetExtension(source);
-                target = Path.Combine(targetDir, name + "_" + index + ext);
-                index++;
-            }
-            File.Move(source, target);
-            return target;
-        }
-
-        private static void RecordMove(Dictionary<string, MoveLogEntry> logs, string sourceFile, string destFile, bool isStl)
-        {
-            string sourceDir = Path.GetDirectoryName(sourceFile);
-            string targetDir = Path.GetDirectoryName(destFile);
-            string key = sourceDir + "|" + targetDir;
-            MoveLogEntry entry;
-            if (!logs.TryGetValue(key, out entry))
-            {
-                entry = new MoveLogEntry { SourceFolder = sourceDir, TargetFolder = targetDir };
-                logs[key] = entry;
-            }
-            if (isStl)
-            {
-                entry.StlCount++;
-            }
-            else
-            {
-                entry.ThreeMfCount++;
-            }
-        }
-
-        private static List<string> DeleteEmptyClassificationFolders(string root)
-        {
-            List<string> deleted = new List<string>();
-            Stack<string> stack = new Stack<string>();
-            stack.Push(root);
-
-            while (stack.Count > 0)
-            {
-                string dir = stack.Pop();
-                string dirName = Path.GetFileName(dir.TrimEnd('\\'));
-                bool isClassification = string.Equals(dirName, "STL文件夹", StringComparison.OrdinalIgnoreCase) ||
-                                        string.Equals(dirName, "3MF文件夹", StringComparison.OrdinalIgnoreCase);
-
-                if (isClassification)
-                {
-                    try
-                    {
-                        if (Directory.GetFileSystemEntries(dir).Length == 0)
-                        {
-                            Directory.Delete(dir);
-                            deleted.Add(RelativeDisplay(root, dir));
-                            continue;
-                        }
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                string[] subDirs;
-                try
-                {
-                    subDirs = Directory.GetDirectories(dir);
-                }
-                catch
-                {
-                    continue;
-                }
-                foreach (string subDir in subDirs)
-                {
-                    stack.Push(subDir);
-                }
-            }
-
-            return deleted;
-        }
-
-        private static string RelativeDisplay(string root, string path)
-        {
-            string rootFull = Path.GetFullPath(root).TrimEnd('\\');
-            string pathFull = Path.GetFullPath(path).TrimEnd('\\');
-            if (string.Equals(pathFull, rootFull, StringComparison.OrdinalIgnoreCase))
-            {
-                return "根目录";
-            }
-            if (pathFull.StartsWith(rootFull + "\\", StringComparison.OrdinalIgnoreCase))
-            {
-                return pathFull.Substring(rootFull.Length + 1);
-            }
-            return pathFull;
         }
 
         private bool HasMultipleSourceFolders()
@@ -878,8 +698,7 @@ namespace ModelExplorer
             Dictionary<string, FolderStat> map = new Dictionary<string, FolderStat>(StringComparer.OrdinalIgnoreCase);
             foreach (ModelFile model in _allModels)
             {
-                if (model.Folder.IndexOf("\\STL文件夹", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    model.Folder.IndexOf("\\3MF文件夹", StringComparison.OrdinalIgnoreCase) >= 0)
+                if (WorkspaceNames.ContainsClassificationSegment(model.Folder))
                 {
                     continue;
                 }
@@ -931,48 +750,20 @@ namespace ModelExplorer
 
             ThreadPool.QueueUserWorkItem(delegate
             {
-                int restored = 0;
-                List<string> failures = new List<string>();
-                List<FileMove> restoredMoves = new List<FileMove>();
-                for (int i = moves.Count - 1; i >= 0; i--)
-                {
-                    FileMove move = moves[i];
-                    try
-                    {
-                        if (File.Exists(move.Dest) && !File.Exists(move.Source))
-                        {
-                            Directory.CreateDirectory(Path.GetDirectoryName(move.Source));
-                            File.Move(move.Dest, move.Source);
-                            restored++;
-                            restoredMoves.Add(move);
-                        }
-                        else if (!File.Exists(move.Dest))
-                        {
-                            failures.Add(Path.GetFileName(move.Dest) + "：文件不存在");
-                        }
-                        else
-                        {
-                            failures.Add(Path.GetFileName(move.Dest) + "：原位置已存在文件");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        failures.Add(Path.GetFileName(move.Dest) + "：" + ex.Message);
-                    }
-                }
+                UndoResult result = FileMoveUndo.Restore(moves, "原位置已存在文件");
 
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    foreach (string failure in failures)
+                    foreach (string failure in result.Failures)
                     {
                         Log("撤销整理失败：" + failure);
                     }
                     _lastMoves.Clear();
-                    RetargetProjectNameUndoAfterOrganizeUndo(restoredMoves);
+                    RetargetProjectNameUndoAfterOrganizeUndo(result.RestoredMoves);
                     UndoProjectNameButton.IsEnabled = _lastProjectNameMoves.Count > 0;
-                    SetStatusText("撤销整理完成：" + restored + " 项");
-                    Log("撤销整理完成：" + restored + " 项" +
-                        (failures.Count > 0 ? "，失败 " + failures.Count + " 项" : ""));
+                    SetStatusText("撤销整理完成：" + result.Restored + " 项");
+                    Log("撤销整理完成：" + result.Restored + " 项" +
+                        (result.Failures.Count > 0 ? "，失败 " + result.Failures.Count + " 项" : ""));
                     BeginScan(_config.LastDir);
                 }));
             });
@@ -984,7 +775,7 @@ namespace ModelExplorer
             {
                 foreach (FileMove projectMove in _lastProjectNameMoves)
                 {
-                    if (PathEquals(projectMove.Dest, organizeMove.Source))
+                    if (PathHelpers.PathEquals(projectMove.Dest, organizeMove.Source))
                     {
                         projectMove.Dest = organizeMove.Dest;
                     }
@@ -998,7 +789,7 @@ namespace ModelExplorer
             {
                 foreach (FileMove projectMove in _lastProjectNameMoves)
                 {
-                    if (PathEquals(projectMove.Dest, restoredMove.Dest))
+                    if (PathHelpers.PathEquals(projectMove.Dest, restoredMove.Dest))
                     {
                         projectMove.Dest = restoredMove.Source;
                     }
@@ -1013,14 +804,9 @@ namespace ModelExplorer
                 Path.GetFileName(projectMove.Dest));
             _lastMoves.RemoveAll(delegate(FileMove move)
             {
-                return PathEquals(move.Source, preOrganizePath) ||
-                       PathEquals(move.Dest, projectMove.Dest);
+                return PathHelpers.PathEquals(move.Source, preOrganizePath) ||
+                       PathHelpers.PathEquals(move.Dest, projectMove.Dest);
             });
-        }
-
-        private static bool PathEquals(string first, string second)
-        {
-            return string.Equals(first, second, StringComparison.OrdinalIgnoreCase);
         }
 
         private void CheckProjectNames_Click(object sender, RoutedEventArgs e)
@@ -1182,50 +968,23 @@ namespace ModelExplorer
 
             ThreadPool.QueueUserWorkItem(delegate
             {
-                int restored = 0;
-                List<string> failures = new List<string>();
-                List<FileMove> restoredMoves = new List<FileMove>();
-                for (int i = moves.Count - 1; i >= 0; i--)
-                {
-                    FileMove move = moves[i];
-                    try
-                    {
-                        if (File.Exists(move.Dest) && !File.Exists(move.Source))
-                        {
-                            File.Move(move.Dest, move.Source);
-                            restored++;
-                            restoredMoves.Add(move);
-                        }
-                        else if (!File.Exists(move.Dest))
-                        {
-                            failures.Add(Path.GetFileName(move.Dest) + "：文件不存在");
-                        }
-                        else
-                        {
-                            failures.Add(Path.GetFileName(move.Dest) + "：原名称位置已存在文件");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        failures.Add(Path.GetFileName(move.Dest) + "：" + ex.Message);
-                    }
-                }
+                UndoResult result = FileMoveUndo.Restore(moves, "原名称位置已存在文件");
 
                 Dispatcher.BeginInvoke(new Action(() =>
                 {
-                    foreach (string failure in failures)
+                    foreach (string failure in result.Failures)
                     {
                         Log("撤销工程名失败：" + failure);
                     }
-                    foreach (FileMove restoredMove in restoredMoves)
+                    foreach (FileMove restoredMove in result.RestoredMoves)
                     {
                         RemoveOrganizeMovesAffectedByProjectUndo(restoredMove);
                     }
                     UndoOrganizeButton.IsEnabled = _lastMoves.Count > 0;
                     _lastProjectNameMoves.Clear();
-                    SetStatusText("撤销工程名完成：" + restored + " 项");
-                    Log("撤销工程名完成：" + restored + " 项" +
-                        (failures.Count > 0 ? "，失败 " + failures.Count + " 项" : ""));
+                    SetStatusText("撤销工程名完成：" + result.Restored + " 项");
+                    Log("撤销工程名完成：" + result.Restored + " 项" +
+                        (result.Failures.Count > 0 ? "，失败 " + result.Failures.Count + " 项" : ""));
                     UndoProjectNameButton.IsEnabled = false;
                     BeginScan(_config.LastDir);
                 }));
@@ -1362,20 +1121,6 @@ namespace ModelExplorer
             string stamp = DateTime.Now.ToString("HH:mm:ss");
             LogBox.AppendText("[" + stamp + "] " + message + Environment.NewLine);
             LogBox.ScrollToEnd();
-        }
-
-        private class FileMove
-        {
-            public string Source { get; set; }
-            public string Dest { get; set; }
-        }
-
-        private class MoveLogEntry
-        {
-            public string SourceFolder { get; set; }
-            public string TargetFolder { get; set; }
-            public int StlCount { get; set; }
-            public int ThreeMfCount { get; set; }
         }
     }
 }

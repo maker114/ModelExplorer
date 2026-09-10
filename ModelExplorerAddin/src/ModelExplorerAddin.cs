@@ -1,14 +1,19 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
+using ModelExplorer;
 using SolidWorks.Interop.sldworks;
 using SolidWorks.Interop.swconst;
 using SolidWorks.Interop.swpublished;
 
 namespace ModelExplorerAddin
 {
+    /// <summary>
+    /// SolidWorks 插件：把当前打开的模型一键导出为 STL，并交给 Bambu Studio 打开。
+    ///
+    /// v3.0.0 起导出流程与配置全部复用 ModelExplorer.Core，与 GUI / CLI 保持一致；
+    /// 原先本文件内自带的一份 SetUserPreference + SaveAs3 + 单位质量映射已删除。
+    /// </summary>
     [ComVisible(true)]
     [Guid("8A5C3F2B-6D7E-4B9A-9C1D-2E4F60718293")]
     [ProgId("ModelExplorerAddin.ModelExplorerAddin")]
@@ -69,7 +74,6 @@ namespace ModelExplorerAddin
             _commandGroup.HasMenu = true;
             _commandGroup.Activate();
 
-            AddinSettings.Load();
             return true;
         }
 
@@ -119,116 +123,41 @@ namespace ModelExplorerAddin
                 return;
             }
 
-            AddinSettings settings = AddinSettings.Load();
-            string stlPath = BuildStlPath(modelPath, settings);
-            if (!ExportStl(model, stlPath, settings))
+            AppConfig config = ConfigService.Load();
+            StlExportOptions options = StlExportOptions.FromConfig(config);
+            // 插件保持 v2.4.1 行为：STL 直接放在模型同目录，不建分类文件夹。
+            options.IntoClassificationFolder = false;
+
+            string stlPath = SolidWorksStlExporter.BuildTargetPath(modelPath, options);
+            string error;
+            if (!SolidWorksStlExporter.TryExportStl(_swApp, model, stlPath, options, out error))
             {
+                ShowWarning(error);
                 return;
             }
 
-            LaunchBambu(stlPath, settings);
+            LaunchBambu(stlPath, config);
         }
 
         public void OnSettings()
         {
-            AddinSettings settings = AddinSettings.Load();
-            using (SettingsForm form = new SettingsForm(settings))
+            AppConfig config = ConfigService.Load();
+            using (SettingsForm form = new SettingsForm(config))
             {
-                if (form.ShowDialog() == DialogResult.OK)
+                if (form.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                 {
-                    form.Result.Save();
+                    ConfigService.Save(form.Result);
                 }
             }
         }
 
-        private static string BuildStlPath(string modelPath, AddinSettings settings)
+        private void LaunchBambu(string stlPath, AppConfig config)
         {
-            string folder = Path.GetDirectoryName(modelPath);
-            string baseName = Path.GetFileNameWithoutExtension(modelPath);
-            string stlPath = Path.Combine(folder, baseName + ".stl");
-
-            if (settings.KeepHistory && File.Exists(stlPath))
+            string error;
+            if (!BambuStudioLauncher.TryLaunch(config.BambuPath, stlPath, null, out error))
             {
-                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string candidateName = baseName + "_" + stamp + ".stl";
-                stlPath = Path.Combine(folder, candidateName);
-
-                int index = 2;
-                while (File.Exists(stlPath))
-                {
-                    candidateName = baseName + "_" + stamp + "_" + index.ToString("00") + ".stl";
-                    stlPath = Path.Combine(folder, candidateName);
-                    index++;
-                }
-            }
-
-            return stlPath;
-        }
-
-        private bool ExportStl(ModelDoc2 model, string stlPath, AddinSettings settings)
-        {
-            try
-            {
-                _swApp.SetUserPreferenceToggle(
-                    (int)swUserPreferenceToggle_e.swSTLShowInfoOnSave,
-                    false);
-                _swApp.SetUserPreferenceToggle(
-                    (int)swUserPreferenceToggle_e.swSTLBinaryFormat,
-                    settings.BinaryStl);
-                _swApp.SetUserPreferenceIntegerValue(
-                    (int)swUserPreferenceIntegerValue_e.swExportStlUnits,
-                    StlUnitValue(settings.StlUnits));
-                _swApp.SetUserPreferenceIntegerValue(
-                    (int)swUserPreferenceIntegerValue_e.swSTLQuality,
-                    StlQualityValue(settings.StlQuality));
-
-                int errors = 0;
-                int warnings = 0;
-                bool ok = model.Extension.SaveAs3(
-                    stlPath,
-                    (int)swSaveAsVersion_e.swSaveAsCurrentVersion,
-                    (int)swSaveAsOptions_e.swSaveAsOptions_Silent,
-                    null,
-                    null,
-                    ref errors,
-                    ref warnings);
-
-                if (!ok || errors != 0)
-                {
-                    ShowWarning("STL 导出失败。错误代码：" + errors + "，警告代码：" + warnings);
-                    return false;
-                }
-
-                return File.Exists(stlPath);
-            }
-            catch (Exception ex)
-            {
-                ShowWarning("STL 导出异常：" + ex.Message);
-                return false;
-            }
-        }
-
-        private void LaunchBambu(string stlPath, AddinSettings settings)
-        {
-            string exePath = settings.BambuStudioPath;
-            if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
-            {
-                ShowWarning("未找到 Bambu Studio，请在“Model Explorer 设置”中配置路径。\r\nSTL 已导出：" + stlPath);
-                return;
-            }
-
-            try
-            {
-                ProcessStartInfo startInfo = new ProcessStartInfo();
-                startInfo.FileName = exePath;
-                startInfo.Arguments = "\"" + stlPath + "\"";
-                startInfo.WorkingDirectory = Path.GetDirectoryName(exePath);
-                startInfo.UseShellExecute = false;
-                Process.Start(startInfo);
-            }
-            catch (Exception ex)
-            {
-                ShowWarning("启动 Bambu Studio 失败：" + ex.Message);
+                ShowWarning("未找到 Bambu Studio，请在“Model Explorer 设置”中配置路径。\r\n" +
+                            "STL 已导出：" + stlPath);
             }
         }
 
@@ -241,38 +170,6 @@ namespace ModelExplorerAddin
                     (int)swMessageBoxIcon_e.swMbWarning,
                     (int)swMessageBoxBtn_e.swMbOk);
             }
-        }
-
-        private static int StlUnitValue(string units)
-        {
-            string normalized = (units ?? string.Empty).Trim().ToLowerInvariant();
-            if (normalized == "cm")
-            {
-                return (int)swLengthUnit_e.swCM;
-            }
-            if (normalized == "m" || normalized == "meter")
-            {
-                return (int)swLengthUnit_e.swMETER;
-            }
-            if (normalized == "in" || normalized == "inch")
-            {
-                return (int)swLengthUnit_e.swINCHES;
-            }
-            return (int)swLengthUnit_e.swMM;
-        }
-
-        private static int StlQualityValue(string quality)
-        {
-            string normalized = (quality ?? string.Empty).Trim().ToLowerInvariant();
-            if (normalized == "coarse")
-            {
-                return (int)swSTLQuality_e.swSTLQuality_Coarse;
-            }
-            if (normalized == "custom")
-            {
-                return (int)swSTLQuality_e.swSTLQuality_Custom;
-            }
-            return (int)swSTLQuality_e.swSTLQuality_Fine;
         }
     }
 }

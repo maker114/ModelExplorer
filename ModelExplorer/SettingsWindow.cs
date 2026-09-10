@@ -15,6 +15,9 @@ namespace ModelExplorer
         private TextBox _solidWorksPathBox;
         private ComboBox _themeCombo;
         private ComboBox _fontSizeCombo;
+        private CheckBox _binaryStlCheck;
+        private ComboBox _stlUnitsCombo;
+        private ComboBox _stlQualityCombo;
 
         public AppConfig Result { get; private set; }
 
@@ -29,7 +32,7 @@ namespace ModelExplorer
             Background = Brushes.Transparent;
             ResizeMode = ResizeMode.NoResize;
             Width = 560;
-            Height = 560;
+            Height = 680;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Icon = AppIcon.WindowIcon;
 
@@ -166,6 +169,61 @@ namespace ModelExplorer
             solidWorksPathRow.Children.Add(browseSolidWorks);
             body.Children.Add(solidWorksPathRow);
 
+            body.Children.Add(SectionTitle("STL 导出", 22));
+            body.Children.Add(new TextBlock
+            {
+                Text = "与 SolidWorks 插件、命令行工具共用同一份配置",
+                Foreground = theme.MutedBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 11,
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 6, 0, 10)
+            });
+
+            _binaryStlCheck = new CheckBox
+            {
+                Content = "使用二进制 STL",
+                IsChecked = _source.BinaryStl,
+                Foreground = theme.TextBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 12,
+                Margin = new Thickness(0, 0, 0, 12)
+            };
+            body.Children.Add(_binaryStlCheck);
+
+            Grid stlOptionsRow = new Grid();
+            stlOptionsRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            stlOptionsRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+            StackPanel unitsPanel = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
+            unitsPanel.Children.Add(OptionLabel("STL 单位", theme));
+            _stlUnitsCombo = CreateCombo(theme);
+            _stlUnitsCombo.Items.Add("mm");
+            _stlUnitsCombo.Items.Add("cm");
+            _stlUnitsCombo.Items.Add("m");
+            _stlUnitsCombo.Items.Add("in");
+            _stlUnitsCombo.SelectedItem = SolidWorksStlExporter.NormalizeUnits(_source.StlUnits);
+            StyleComboBox(_stlUnitsCombo, theme);
+            unitsPanel.Children.Add(_stlUnitsCombo);
+            stlOptionsRow.Children.Add(unitsPanel);
+
+            StackPanel qualityPanel = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
+            qualityPanel.Children.Add(OptionLabel("STL 质量", theme));
+            _stlQualityCombo = CreateCombo(theme);
+            _stlQualityCombo.Items.Add("Coarse");
+            _stlQualityCombo.Items.Add("Fine");
+            _stlQualityCombo.SelectedItem = SolidWorksStlExporter.NormalizeQuality(_source.StlQuality);
+            if (_stlQualityCombo.SelectedItem == null)
+            {
+                _stlQualityCombo.SelectedItem = "Fine";
+            }
+            StyleComboBox(_stlQualityCombo, theme);
+            qualityPanel.Children.Add(_stlQualityCombo);
+            Grid.SetColumn(qualityPanel, 1);
+            stlOptionsRow.Children.Add(qualityPanel);
+
+            body.Children.Add(stlOptionsRow);
+
             body.Children.Add(SectionTitle("外观预设", 22));
             _themeCombo = new ComboBox
             {
@@ -294,6 +352,9 @@ namespace ModelExplorer
                 LastDir = _source.LastDir,
                 KeepHistory = _source.KeepHistory,
                 OpenBambu = _source.OpenBambu,
+                BinaryStl = _binaryStlCheck.IsChecked == true,
+                StlUnits = (string)_stlUnitsCombo.SelectedItem,
+                StlQuality = (string)_stlQualityCombo.SelectedItem,
                 BambuPath = _bambuPathBox.Text.Trim(),
                 SolidWorksPath = _solidWorksPathBox.Text.Trim(),
                 Theme = (string)_themeCombo.SelectedItem,
@@ -301,6 +362,33 @@ namespace ModelExplorer
                 ProjectNameUnchecked = _source.ProjectNameUnchecked ?? new System.Collections.Generic.List<string>()
             };
             DialogResult = true;
+        }
+
+        private static TextBlock OptionLabel(string text, AppTheme theme)
+        {
+            return new TextBlock
+            {
+                Text = text,
+                Foreground = theme.MutedBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 11,
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+        }
+
+        private static ComboBox CreateCombo(AppTheme theme)
+        {
+            return new ComboBox
+            {
+                Background = theme.PanelBrush,
+                Foreground = theme.TextBrush,
+                BorderBrush = theme.BorderBrush,
+                Height = 32,
+                Padding = new Thickness(8, 6, 8, 6),
+                VerticalContentAlignment = VerticalAlignment.Center,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 12
+            };
         }
 
         private static TextBlock SectionTitle(string text, double topMargin = 0)

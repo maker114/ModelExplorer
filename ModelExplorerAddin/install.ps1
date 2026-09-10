@@ -1,5 +1,5 @@
-param(
-    [string]$DllPath = (Join-Path $PSScriptRoot 'bin\ModelExplorerAddin.dll'),
+﻿param(
+    [string]$DllPath = (Join-Path $PSScriptRoot 'bin\Release\ModelExplorerAddin.dll'),
     [switch]$AllUsers
 )
 

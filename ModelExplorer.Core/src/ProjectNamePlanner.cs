@@ -17,13 +17,24 @@ namespace ModelExplorer
         public string FileType { get; set; }
     }
 
+    /// <summary>
+    /// 工程名整理计划。纯函数，无 UI / 文件系统写入依赖，是本工程最复杂的业务规则，
+    /// 由 ModelExplorer.Tests 覆盖。
+    ///
+    /// 规则来源（README「工程名整理」）：
+    ///  - 根工程名 = 工程根文件夹名；根目录下的直接子文件夹（除分类文件夹）为子工程。
+    ///  - 目标名 = 工程名[_子工程名]_主体。
+    ///  - 零件 / 普通 STL：第一个 "_" 之前为旧工程名。
+    ///  - 装配体导出 STL：包含 " - " 即按装配体处理，忽略 " - " 之前内容，
+    ///    取其后第一个 "_" 之后为主体，并在扩展名前追加 [装配体导出]。
+    /// </summary>
     public static class ProjectNamePlanner
     {
         public static List<ProjectNameChange> BuildPlan(string root, IEnumerable<ModelFile> files)
         {
             List<ProjectNameChange> changes = new List<ProjectNameChange>();
             string rootName = Path.GetFileName(root.TrimEnd('\\'));
-            if (string.IsNullOrEmpty(rootName))
+            if (string.IsNullOrEmpty(rootName) || files == null)
             {
                 return changes;
             }
@@ -44,39 +55,20 @@ namespace ModelExplorer
                 string subProjectName = GetSubProjectName(model.RelativePath);
                 string fileType = model.Kind == ModelKind.Part ? "零件" : "STL";
                 bool assemblyExport = model.Kind == ModelKind.Stl &&
-                                      IsAssemblyExportStl(originalName);
+                                      AssemblyExportRule.HasRenameSeparator(originalName);
 
                 string targetName;
                 string category;
                 if (assemblyExport)
                 {
-                    int separator = originalName.LastIndexOf(" - ", StringComparison.Ordinal);
-                    string expectedPrefix = BuildExpectedPrefix(rootName, subProjectName);
-                    int expectedIndex = originalName.IndexOf(
-                        expectedPrefix + "_",
-                        separator + 3,
-                        StringComparison.OrdinalIgnoreCase);
-                    string body;
-                    if (expectedIndex >= separator + 3)
-                    {
-                        body = originalName.Substring(expectedIndex + expectedPrefix.Length + 1);
-                    }
-                    else
-                    {
-                        int bodyUnderscore = originalName.IndexOf('_', separator + 3);
-                        body = bodyUnderscore > separator + 3
-                            ? originalName.Substring(bodyUnderscore + 1)
-                            : originalName.Substring(separator + 3);
-                    }
-                    body = RemoveAssemblyExportMarker(body);
-                    targetName = AddAssemblyExportMarker(
+                    string body = ExtractAssemblyBody(originalName, rootName, subProjectName);
+                    targetName = AssemblyExportRule.AddMarker(
                         BuildTargetFileName(rootName, subProjectName, body));
                     category = "修改";
                     fileType = "装配体导出";
                 }
                 else
                 {
-                    string expectedPrefix = BuildExpectedPrefix(rootName, subProjectName);
                     if (HasExpectedPrefix(originalName, rootName, subProjectName))
                     {
                         continue;
@@ -144,6 +136,32 @@ namespace ModelExplorer
             return 2;
         }
 
+        /// <summary>取装配体导出 STL 的主体部分（不含标记）。</summary>
+        private static string ExtractAssemblyBody(string originalName, string rootName, string subProjectName)
+        {
+            int separator = originalName.LastIndexOf(AssemblyExportRule.Separator, StringComparison.Ordinal);
+            string expectedPrefix = BuildExpectedPrefix(rootName, subProjectName);
+            int expectedIndex = originalName.IndexOf(
+                expectedPrefix + "_",
+                separator + AssemblyExportRule.Separator.Length,
+                StringComparison.OrdinalIgnoreCase);
+
+            string body;
+            if (expectedIndex >= separator + AssemblyExportRule.Separator.Length)
+            {
+                body = originalName.Substring(expectedIndex + expectedPrefix.Length + 1);
+            }
+            else
+            {
+                int bodyUnderscore = originalName.IndexOf('_', separator + AssemblyExportRule.Separator.Length);
+                body = bodyUnderscore > separator + AssemblyExportRule.Separator.Length
+                    ? originalName.Substring(bodyUnderscore + 1)
+                    : originalName.Substring(separator + AssemblyExportRule.Separator.Length);
+            }
+
+            return AssemblyExportRule.RemoveMarker(body);
+        }
+
         private static string GetSubProjectName(string relativePath)
         {
             if (string.IsNullOrEmpty(relativePath))
@@ -158,8 +176,7 @@ namespace ModelExplorer
             }
 
             string firstFolder = directory.Split('\\')[0];
-            if (string.Equals(firstFolder, "STL文件夹", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(firstFolder, "3MF文件夹", StringComparison.OrdinalIgnoreCase))
+            if (WorkspaceNames.IsClassificationFolder(firstFolder))
             {
                 return "";
             }
@@ -231,41 +248,6 @@ namespace ModelExplorer
                 }
             }
             return remainder;
-        }
-
-        private static bool IsAssemblyExportStl(string fileName)
-        {
-            return fileName.IndexOf(" - ", StringComparison.Ordinal) > 0;
-        }
-
-        private static string RemoveAssemblyExportMarker(string fileName)
-        {
-            string marker = "[装配体导出]";
-            int index = fileName.IndexOf(marker, StringComparison.Ordinal);
-            if (index < 0)
-            {
-                return fileName;
-            }
-
-            string extension = Path.GetExtension(fileName);
-            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-            if (nameWithoutExtension.EndsWith(marker, StringComparison.Ordinal))
-            {
-                return nameWithoutExtension.Substring(0, nameWithoutExtension.Length - marker.Length) + extension;
-            }
-            return fileName.Replace(marker, "");
-        }
-
-        private static string AddAssemblyExportMarker(string fileName)
-        {
-            string marker = "[装配体导出]";
-            string extension = Path.GetExtension(fileName);
-            string nameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
-            if (nameWithoutExtension.EndsWith(marker, StringComparison.Ordinal))
-            {
-                return fileName;
-            }
-            return nameWithoutExtension + marker + extension;
         }
     }
 }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ModelExplorerCli</RootNamespace>
+    <AssemblyName>ModelExplorerCli</AssemblyName>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AssemblyTitle>Model Explorer CLI</AssemblyTitle>
+    <Product>Model Explorer</Product>
+    <Version>3.0.0</Version>
+  </PropertyGroup>
+
+  <!--
+    v3.0.0 起 CLI 不再直接引用 SolidWorks Interop，也不再引用插件工程来蹭 AddinSettings：
+    导出、配置、Bambu 启动全部来自 ModelExplorer.Core。
+    构建方式由“csc.exe 拼命令行”改为标准 dotnet build。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\ModelExplorer.Core\ModelExplorer.Core.csproj" />
+  </ItemGroup>
+
+</Project>

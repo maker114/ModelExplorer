@@ -1,5 +1,4 @@
-using System;
-using System.Windows.Media;
+using System.IO;
 
 namespace ModelExplorer
 {
@@ -11,6 +10,13 @@ namespace ModelExplorer
         ThreeMf
     }
 
+    /// <summary>
+    /// 扫描结果的领域模型。
+    ///
+    /// 修复 v2.4.1 的分层缺陷：原先本类带有 TypeBrush（WPF Brush）属性，使领域模型
+    /// 反向依赖 WPF，ProjectScanner 无法脱离 UI 框架测试。颜色改由 GUI 层的
+    /// KindBrushConverter 负责。
+    /// </summary>
     public class ModelFile
     {
         public string Name { get; set; }
@@ -27,23 +33,6 @@ namespace ModelExplorer
         public bool IsUnorganized { get; set; }
         public bool IsAssemblyExport { get; set; }
 
-        public string MatchText
-        {
-            get
-            {
-                string result = "";
-                if (IsUnorganized)
-                {
-                    result += " [未整理]";
-                }
-                if (IsOrphan)
-                {
-                    result += " [未对应]";
-                }
-                return result;
-            }
-        }
-
         public string UnorganizedText
         {
             get { return IsUnorganized ? "[未整理]" : ""; }
@@ -59,24 +48,10 @@ namespace ModelExplorer
             get { return "归属文件夹：" + Folder; }
         }
 
-        public Brush TypeBrush
+        /// <summary>无扩展名的主文件名。</summary>
+        public string BaseName
         {
-            get
-            {
-                if (Kind == ModelKind.Assembly)
-                {
-                    return ThemeManager.Current.AssemblyBrush;
-                }
-                if (Kind == ModelKind.Stl)
-                {
-                    return ThemeManager.Current.StlBrush;
-                }
-                if (Kind == ModelKind.ThreeMf)
-                {
-                    return ThemeManager.Current.AssemblyBrush;
-                }
-                return ThemeManager.Current.PartBrush;
-            }
+            get { return System.IO.Path.GetFileNameWithoutExtension(Name); }
         }
     }
 }

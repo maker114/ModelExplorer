@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ModelExplorer</RootNamespace>
+    <AssemblyName>ModelExplorer.Core</AssemblyName>
+    <!-- Bambu Studio 的 SendKeys 自动化需要 WinForms，其余逻辑不依赖任何 UI 框架。 -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- 新项目由 SDK 生成程序集信息（仓库内既有项目仍保留手写 AssemblyInfo.cs）。 -->
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <AssemblyTitle>Model Explorer Core</AssemblyTitle>
+    <Product>Model Explorer</Product>
+    <Version>3.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+
+  <!-- SolidWorks Interop 引用由 Directory.Build.props 统一声明。 -->
+
+</Project>

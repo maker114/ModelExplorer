@@ -1,19 +1,27 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using ModelExplorer;
 
 namespace ModelExplorerAddin
 {
+    /// <summary>
+    /// 插件设置窗体。v3.0.0 起直接读写共享的 <see cref="AppConfig"/>，
+    /// 不再使用独立的 ModelExplorerAddin.config（同一开关在 GUI 与插件间互不生效的问题已修复）。
+    /// </summary>
     public sealed class SettingsForm : Form
     {
+        private readonly AppConfig _source;
         private TextBox _bambuPath;
         private CheckBox _keepHistory;
         private CheckBox _binaryStl;
         private ComboBox _stlUnits;
         private ComboBox _stlQuality;
 
-        public SettingsForm(AddinSettings settings)
+        public SettingsForm(AppConfig settings)
         {
+            _source = settings;
+
             Text = "Model Explorer 设置";
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -28,7 +36,7 @@ namespace ModelExplorerAddin
             Controls.Add(pathLabel);
 
             _bambuPath = new TextBox();
-            _bambuPath.Text = settings.BambuStudioPath;
+            _bambuPath.Text = settings.BambuPath;
             _bambuPath.SetBounds(150, 16, 320, 24);
             Controls.Add(_bambuPath);
 
@@ -58,7 +66,7 @@ namespace ModelExplorerAddin
             _stlUnits = new ComboBox();
             _stlUnits.DropDownStyle = ComboBoxStyle.DropDownList;
             _stlUnits.Items.AddRange(new object[] { "mm", "cm", "m", "in" });
-            _stlUnits.SelectedItem = NormalizeUnits(settings.StlUnits);
+            _stlUnits.SelectedItem = SolidWorksStlExporter.NormalizeUnits(settings.StlUnits);
             _stlUnits.SetBounds(120, 126, 100, 24);
             Controls.Add(_stlUnits);
 
@@ -70,7 +78,7 @@ namespace ModelExplorerAddin
             _stlQuality = new ComboBox();
             _stlQuality.DropDownStyle = ComboBoxStyle.DropDownList;
             _stlQuality.Items.AddRange(new object[] { "Coarse", "Fine" });
-            _stlQuality.SelectedItem = NormalizeQuality(settings.StlQuality);
+            _stlQuality.SelectedItem = NormalizeQualitySelection(settings.StlQuality);
             _stlQuality.SetBounds(346, 126, 100, 24);
             Controls.Add(_stlQuality);
 
@@ -90,17 +98,20 @@ namespace ModelExplorerAddin
             CancelButton = cancelButton;
         }
 
-        public AddinSettings Result
+        /// <summary>
+        /// 返回保存后的完整配置：以进入窗体时的配置为基础，只改动本窗体负责的字段，
+        /// 避免插件的设置保存把 GUI 的主题、上次目录等字段清掉。
+        /// </summary>
+        public AppConfig Result
         {
             get
             {
-                AddinSettings settings = new AddinSettings();
-                settings.BambuStudioPath = _bambuPath.Text.Trim();
-                settings.KeepHistory = _keepHistory.Checked;
-                settings.BinaryStl = _binaryStl.Checked;
-                settings.StlUnits = (string)_stlUnits.SelectedItem;
-                settings.StlQuality = (string)_stlQuality.SelectedItem;
-                return settings;
+                _source.BambuPath = _bambuPath.Text.Trim();
+                _source.KeepHistory = _keepHistory.Checked;
+                _source.BinaryStl = _binaryStl.Checked;
+                _source.StlUnits = (string)_stlUnits.SelectedItem;
+                _source.StlQuality = (string)_stlQuality.SelectedItem;
+                return _source;
             }
         }
 
@@ -119,32 +130,10 @@ namespace ModelExplorerAddin
             }
         }
 
-        private static string NormalizeUnits(string value)
+        /// <summary>质量下拉只提供 Coarse / Fine，映射不到时回退 Fine。</summary>
+        private static string NormalizeQualitySelection(string value)
         {
-            string normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
-            if (normalized == "cm")
-            {
-                return "cm";
-            }
-            if (normalized == "m")
-            {
-                return "m";
-            }
-            if (normalized == "in")
-            {
-                return "in";
-            }
-            return "mm";
-        }
-
-        private static string NormalizeQuality(string value)
-        {
-            string normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
-            if (normalized == "coarse")
-            {
-                return "Coarse";
-            }
-            return "Fine";
+            return SolidWorksStlExporter.NormalizeQuality(value) == "Coarse" ? "Coarse" : "Fine";
         }
     }
 }

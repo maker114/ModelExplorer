@@ -1,0 +1,50 @@
+<Project>
+
+  <!--
+    全仓库统一构建属性。原先每个 csproj 各自重复 net48 / x64 / LangVersion，
+    改动一处必然漏改其它项目，这里统一声明。
+  -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <Deterministic>true</Deterministic>
+    <NeutralLanguage>zh-Hans</NeutralLanguage>
+  </PropertyGroup>
+
+  <!--
+    SolidWorks Interop 只在仓库内维护一份，路径由此单一来源提供。
+    原先 ModelExplorerAddin.csproj 与 ModelExplorerCli\build.ps1 硬编码
+    D:\SW2022\SOLIDWORKS\，换机器即无法构建；GUI 与 CLI 又各自重复声明 HintPath。
+
+    说明：swconst 只提供枚举常量，会被编译期内联，CLR 不一定会记录对它的程序集引用，
+    因此不能依赖“传递引用”把 DLL 带进输出目录——必须在此显式声明，
+    保证 bin / 发布包始终同时包含 sldworks 与 swconst（发布版运行所需）。
+  -->
+  <PropertyGroup>
+    <SolidWorksLibDir>$(MSBuildThisFileDirectory)lib\SolidWorks</SolidWorksLibDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="SolidWorks.Interop.sldworks">
+      <HintPath>$(SolidWorksLibDir)\SolidWorks.Interop.sldworks.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="SolidWorks.Interop.swconst">
+      <HintPath>$(SolidWorksLibDir)\SolidWorks.Interop.swconst.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="SolidWorks.Interop.swpublished">
+      <HintPath>$(SolidWorksLibDir)\SolidWorks.Interop.swpublished.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

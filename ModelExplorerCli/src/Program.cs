@@ -1,22 +1,20 @@
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading;
-using System.Windows.Forms;
-using SolidWorks.Interop.sldworks;
-using SolidWorks.Interop.swconst;
-using ModelExplorerAddin;
+using ModelExplorer;
 
 namespace ModelExplorerCli
 {
+    /// <summary>
+    /// 命令行转换工具。
+    ///
+    /// v3.0.0 起所有业务逻辑（配置、STL 导出、Bambu Studio 启动、分类文件夹命名）
+    /// 统一复用 ModelExplorer.Core，与 GUI、SolidWorks 插件共用同一份实现与同一份配置。
+    ///
+    /// 退出码保持与 v2.4.1 一致：
+    ///   0 成功 / 1 异常 / 2 参数或模型路径无效 / 3 打开模型失败 / 4 导出 STL 失败
+    /// </summary>
     internal static class Program
     {
-        private const string StlFolderName = "STL文件";
-
-        private static SldWorks _swApp;
-        private static bool _launchedSw;
-
         [STAThread]
         private static int Main(string[] args)
         {
@@ -24,8 +22,7 @@ namespace ModelExplorerCli
             {
                 if (args.Length >= 2 && args[0] == "--save-only")
                 {
-                    SaveBambuProject(args[1]);
-                    return 0;
+                    return SaveBambuProject(args[1]);
                 }
 
                 string modelPath = null;
@@ -93,83 +90,61 @@ namespace ModelExplorerCli
                     return 2;
                 }
 
-                AddinSettings settings = AddinSettings.Load();
+                AppConfig config = ConfigService.Load();
+                StlExportOptions options = StlExportOptions.FromConfig(config);
+                options.IntoClassificationFolder = true; // 与 GUI 一致：模型目录\STL文件夹
+                options.ExplicitOutputPath = outputPath;
                 if (keepHistory)
                 {
-                    settings.KeepHistory = true;
+                    options.KeepHistory = true;
                 }
 
-                ConnectToSolidWorks();
-                try
+                StlExportOutcome outcome = SolidWorksConverter.TryExportStl(modelPath, options);
+                if (!outcome.Success)
                 {
-                    int docType = GetDocumentType(modelPath);
-                    int openErrors = 0;
-                    int openWarnings = 0;
-                    ModelDoc2 model = _swApp.OpenDoc6(
-                        modelPath,
-                        docType,
-                        (int)swOpenDocOptions_e.swOpenDocOptions_Silent,
-                        "",
-                        ref openErrors,
-                        ref openWarnings);
-
-                    if (model == null)
-                    {
-                        Console.Error.WriteLine("SolidWorks 打开模型失败，错误代码：" + openErrors + "，警告代码：" + openWarnings);
-                        return 3;
-                    }
-
-                    try
-                    {
-                        string stlPath = outputPath;
-                        if (string.IsNullOrEmpty(stlPath))
-                        {
-                            stlPath = BuildStlPath(modelPath, settings);
-                        }
-
-                        if (!ExportStl(model, stlPath, settings))
-                        {
-                            return 4;
-                        }
-
-                        Console.WriteLine(stlPath);
-
-                        if (!noBambu)
-                        {
-                            string threeMfPath = BuildThreeMfPath(stlPath, modelPath, threeMfOutputPath);
-                            if (autoThreeMf)
-                            {
-                                LaunchBambu(stlPath, threeMfPath, false, settings);
-                                Console.WriteLine(threeMfPath);
-                            }
-                            else if (!noThreeMf)
-                            {
-                                LaunchBambu(stlPath, threeMfPath, true, settings);
-                                Console.WriteLine("Bambu Studio 已打开。请选择打印机和耗材，然后回到本窗口按 Enter 保存 3MF。");
-                                if (!Console.IsInputRedirected)
-                                {
-                                    Console.ReadLine();
-                                }
-                                SaveBambuProject(threeMfPath);
-                            }
-                            else
-                            {
-                                LaunchBambu(stlPath, threeMfPath, true, settings);
-                            }
-                        }
-
-                        return 0;
-                    }
-                    finally
-                    {
-                        string title = model.GetTitle();
-                        _swApp.CloseDoc(title);
-                    }
+                    Console.Error.WriteLine(outcome.Error);
+                    return outcome.Failure == StlExportFailure.OpenDocument ? 3 : 4;
                 }
-                finally
+
+                Console.WriteLine(outcome.StlPath);
+
+                if (noBambu)
                 {
-                    DisconnectFromSolidWorks();
+                    return 0;
                 }
+
+                string threeMfPath = ResolveThreeMfPath(modelPath, outcome.StlPath, threeMfOutputPath);
+                string launchError;
+
+                if (autoThreeMf)
+                {
+                    if (!BambuStudioLauncher.TryLaunch(config.BambuPath, outcome.StlPath, threeMfPath, out launchError))
+                    {
+                        Console.Error.WriteLine(launchError);
+                    }
+                    Console.WriteLine(threeMfPath);
+                    return 0;
+                }
+
+                if (noThreeMf)
+                {
+                    if (!BambuStudioLauncher.TryLaunch(config.BambuPath, outcome.StlPath, null, out launchError))
+                    {
+                        Console.Error.WriteLine(launchError);
+                    }
+                    return 0;
+                }
+
+                if (!BambuStudioLauncher.TryLaunch(config.BambuPath, outcome.StlPath, null, out launchError))
+                {
+                    Console.Error.WriteLine(launchError);
+                }
+                Console.WriteLine("Bambu Studio 已打开。请选择打印机和耗材，然后回到本窗口按 Enter 保存 3MF。");
+                if (!Console.IsInputRedirected)
+                {
+                    Console.ReadLine();
+                }
+                return SaveBambuProject(threeMfPath);
             }
             catch (Exception ex)
             {
@@ -178,269 +153,30 @@ namespace ModelExplorerCli
             }
         }
 
-        private static void ConnectToSolidWorks()
+        /// <summary>3MF 默认放在模型同级目录，文件名与 STL 同名（沿用 v2.4.1 规则）。</summary>
+        private static string ResolveThreeMfPath(string modelPath, string stlPath, string explicitPath)
         {
-            try
+            if (!string.IsNullOrEmpty(explicitPath))
             {
-                _swApp = (SldWorks)Marshal.GetActiveObject("SldWorks.Application");
+                return explicitPath;
             }
-            catch
-            {
-            }
-
-            if (_swApp == null)
-            {
-                Type swType = Type.GetTypeFromProgID("SldWorks.Application");
-                if (swType == null)
-                {
-                    throw new InvalidOperationException("未找到 SolidWorks COM 注册，请确认已安装 SolidWorks 2022。");
-                }
-
-                _swApp = (SldWorks)Activator.CreateInstance(swType);
-                _launchedSw = true;
-                Thread.Sleep(3000);
-            }
-
-            if (_launchedSw)
-            {
-                _swApp.Visible = false;
-            }
-        }
-
-        private static void DisconnectFromSolidWorks()
-        {
-            if (_swApp == null)
-            {
-                return;
-            }
-
-            try
-            {
-                if (_launchedSw)
-                {
-                    _swApp.ExitApp();
-                }
-            }
-            catch
-            {
-            }
-            finally
-            {
-                Marshal.ReleaseComObject(_swApp);
-                _swApp = null;
-            }
-        }
-
-        private static int GetDocumentType(string modelPath)
-        {
-            string extension = Path.GetExtension(modelPath).ToLowerInvariant();
-            if (extension == ".sldprt")
-            {
-                return (int)swDocumentTypes_e.swDocPART;
-            }
-            if (extension == ".sldasm")
-            {
-                return (int)swDocumentTypes_e.swDocASSEMBLY;
-            }
-
-            throw new NotSupportedException("仅支持 .sldprt 和 .sldasm 文件。");
-        }
-
-        private static string BuildStlPath(string modelPath, AddinSettings settings)
-        {
-            string modelFolder = Path.GetDirectoryName(modelPath);
-            string folder = Path.Combine(modelFolder, StlFolderName);
-            Directory.CreateDirectory(folder);
-            string baseName = Path.GetFileNameWithoutExtension(modelPath);
-            string stlPath = Path.Combine(folder, baseName + ".stl");
-
-            if (settings.KeepHistory && File.Exists(stlPath))
-            {
-                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                string candidateName = baseName + "_" + stamp + ".stl";
-                stlPath = Path.Combine(folder, candidateName);
-
-                int index = 2;
-                while (File.Exists(stlPath))
-                {
-                    candidateName = baseName + "_" + stamp + "_" + index.ToString("00") + ".stl";
-                    stlPath = Path.Combine(folder, candidateName);
-                    index++;
-                }
-            }
-
-            return stlPath;
-        }
-
-        private static bool ExportStl(ModelDoc2 model, string stlPath, AddinSettings settings)
-        {
-            _swApp.SetUserPreferenceToggle(
-                (int)swUserPreferenceToggle_e.swSTLShowInfoOnSave,
-                false);
-            _swApp.SetUserPreferenceToggle(
-                (int)swUserPreferenceToggle_e.swSTLBinaryFormat,
-                settings.BinaryStl);
-            _swApp.SetUserPreferenceIntegerValue(
-                (int)swUserPreferenceIntegerValue_e.swExportStlUnits,
-                StlUnitValue(settings.StlUnits));
-            _swApp.SetUserPreferenceIntegerValue(
-                (int)swUserPreferenceIntegerValue_e.swSTLQuality,
-                StlQualityValue(settings.StlQuality));
-
-            int errors = 0;
-            int warnings = 0;
-            bool ok = model.Extension.SaveAs3(
-                stlPath,
-                (int)swSaveAsVersion_e.swSaveAsCurrentVersion,
-                (int)swSaveAsOptions_e.swSaveAsOptions_Silent,
-                null,
-                null,
-                ref errors,
-                ref warnings);
-
-            if (!ok || errors != 0)
-            {
-                Console.Error.WriteLine("STL 导出失败。错误代码：" + errors + "，警告代码：" + warnings);
-                return false;
-            }
-
-            if (!File.Exists(stlPath))
-            {
-                Console.Error.WriteLine("STL 导出后未找到文件：" + stlPath);
-                return false;
-            }
-
-            return true;
-        }
-
-        private static string BuildThreeMfPath(string stlPath, string modelPath, string threeMfOutputPath)
-        {
-            if (!string.IsNullOrEmpty(threeMfOutputPath))
-            {
-                return threeMfOutputPath;
-            }
-
             string folder = Path.GetDirectoryName(modelPath);
             string baseName = Path.GetFileNameWithoutExtension(stlPath);
             return Path.Combine(folder, baseName + ".3mf");
         }
 
-        private static void LaunchBambu(string stlPath, string threeMfPath, bool noThreeMf, AddinSettings settings)
+        private static int SaveBambuProject(string threeMfPath)
         {
-            string exePath = settings.BambuStudioPath;
-            if (string.IsNullOrEmpty(exePath) || !File.Exists(exePath))
+            string error;
+            if (!BambuStudioLauncher.TrySaveProject(threeMfPath, out error))
             {
-                Console.Error.WriteLine("未找到 Bambu Studio，请在 %APPDATA%\\ModelExplorerAddin\\ModelExplorerAddin.config 中配置路径。STL 已生成：" + stlPath);
-                return;
+                Console.Error.WriteLine(error);
+                return 0; // 保持 v2.4.1 语义：自动保存失败不改变退出码
             }
-
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = exePath;
-            if (noThreeMf)
-            {
-                startInfo.Arguments = "\"" + stlPath + "\"";
-            }
-            else
-            {
-                startInfo.Arguments = "--export-3mf=\"" + threeMfPath + "\" \"" + stlPath + "\"";
-            }
-            startInfo.WorkingDirectory = Path.GetDirectoryName(exePath);
-            startInfo.UseShellExecute = false;
-            Process.Start(startInfo);
-        }
-
-        private static void SaveBambuProject(string threeMfPath)
-        {
-            IntPtr window = IntPtr.Zero;
-            for (int i = 0; i < 30; i++)
-            {
-                window = FindBambuWindow();
-                if (window != IntPtr.Zero)
-                {
-                    break;
-                }
-                Thread.Sleep(1000);
-            }
-
-            if (window == IntPtr.Zero)
-            {
-                Console.Error.WriteLine("找不到 Bambu Studio 窗口，请手动另存为：" + threeMfPath);
-                return;
-            }
-
-            SetForegroundWindow(window);
-            Thread.Sleep(800);
-            SendKeys.SendWait("^s");
-            Thread.Sleep(1500);
-            SendKeys.SendWait("^a");
-            SendKeys.SendWait(EscapeSendKeys(threeMfPath));
-            SendKeys.SendWait("{ENTER}");
-            Thread.Sleep(1200);
-            SendKeys.SendWait("{ENTER}");
 
             Console.WriteLine("已尝试保存 3MF：" + threeMfPath);
             Console.WriteLine("如果 Bambu Studio 弹出了保存窗口，请手动确认保存位置。");
-        }
-
-        private static IntPtr FindBambuWindow()
-        {
-            Process[] processes = Process.GetProcessesByName("bambu-studio");
-            foreach (Process process in processes)
-            {
-                if (process.MainWindowHandle != IntPtr.Zero)
-                {
-                    return process.MainWindowHandle;
-                }
-            }
-            return IntPtr.Zero;
-        }
-
-        private static string EscapeSendKeys(string text)
-        {
-            text = text.Replace("{", "{{}");
-            text = text.Replace("}", "{}}");
-            text = text.Replace("+", "{+}");
-            text = text.Replace("^", "{^}");
-            text = text.Replace("%", "{%}");
-            text = text.Replace("~", "{~}");
-            text = text.Replace("(", "{(}");
-            text = text.Replace(")", "{)}");
-            return text;
-        }
-
-        [DllImport("user32.dll")]
-        private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-        private static int StlUnitValue(string units)
-        {
-            string normalized = (units ?? string.Empty).Trim().ToLowerInvariant();
-            if (normalized == "cm")
-            {
-                return (int)swLengthUnit_e.swCM;
-            }
-            if (normalized == "m" || normalized == "meter")
-            {
-                return (int)swLengthUnit_e.swMETER;
-            }
-            if (normalized == "in" || normalized == "inch")
-            {
-                return (int)swLengthUnit_e.swINCHES;
-            }
-            return (int)swLengthUnit_e.swMM;
-        }
-
-        private static int StlQualityValue(string quality)
-        {
-            string normalized = (quality ?? string.Empty).Trim().ToLowerInvariant();
-            if (normalized == "coarse")
-            {
-                return (int)swSTLQuality_e.swSTLQuality_Coarse;
-            }
-            if (normalized == "custom")
-            {
-                return (int)swSTLQuality_e.swSTLQuality_Custom;
-            }
-            return (int)swSTLQuality_e.swSTLQuality_Fine;
+            return 0;
         }
     }
 }

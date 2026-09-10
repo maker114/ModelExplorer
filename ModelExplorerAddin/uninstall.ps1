@@ -1,4 +1,4 @@
-$ErrorActionPreference = 'Continue'
+﻿$ErrorActionPreference = 'Continue'
 
 $clsid = '8A5C3F2B-6D7E-4B9A-9C1D-2E4F60718293'
 $progId = 'ModelExplorerAddin.ModelExplorerAddin'

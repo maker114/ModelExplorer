@@ -1,55 +1,22 @@
+﻿# 构建 Model Explorer CLI
+#
+# v3.0.0 起改用标准 dotnet build：原先用 csc.exe 手工拼命令行，
+# 并把 Interop 路径硬编码为 D:\SW2022\SOLIDWORKS\，换机器即无法构建。
+
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
-$src = Join-Path $root 'src'
-$out = Join-Path $root 'bin'
-$addinSrc = Join-Path (Split-Path $root -Parent) 'ModelExplorerAddin\src\AddinSettings.cs'
+$project = Join-Path $root 'ModelExplorerCli.csproj'
 
-New-Item -ItemType Directory -Force -Path $out | Out-Null
-
-$frameworkDir = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319'
-$cscExe = Join-Path $frameworkDir 'csc.exe'
-
-if (-not (Test-Path $cscExe)) {
-    throw "csc.exe not found: $cscExe"
+# dotnet 不在 PATH 时回退到默认安装位置（部分受限会话不继承 PATH）
+$dotnet = 'C:\Program Files\dotnet\dotnet.exe'
+if (-not (Test-Path $dotnet)) {
+    $dotnet = 'dotnet'
 }
 
-$references = @(
-    'D:\SW2022\SOLIDWORKS\SolidWorks.Interop.sldworks.dll',
-    'D:\SW2022\SOLIDWORKS\SolidWorks.Interop.swconst.dll'
-)
-
-$referenceArgs = @()
-foreach ($reference in $references) {
-    $referenceArgs += '/reference:' + $reference
-}
-
-$sourceFiles = @(
-    (Join-Path $src 'Program.cs'),
-    $addinSrc
-)
-
-$exePath = Join-Path $out 'ModelExplorerCli.exe'
-
-& $cscExe `
-    /nologo `
-    /target:exe `
-    /platform:x64 `
-    /out:$exePath `
-    $referenceArgs `
-    $sourceFiles
-
+& $dotnet build $project -c Release --nologo
 if ($LASTEXITCODE -ne 0) {
-    throw "csc.exe failed with exit code $LASTEXITCODE"
+    throw "dotnet build failed with exit code $LASTEXITCODE"
 }
 
-$interopFiles = @(
-    'D:\SW2022\SOLIDWORKS\SolidWorks.Interop.sldworks.dll',
-    'D:\SW2022\SOLIDWORKS\SolidWorks.Interop.swconst.dll'
-)
-
-foreach ($interopFile in $interopFiles) {
-    Copy-Item -LiteralPath $interopFile -Destination $out -Force
-}
-
-Write-Host "Built: $exePath"
+Write-Host "Built: $(Join-Path $root 'bin\Release\ModelExplorerCli.exe')"

@@ -1,64 +1,25 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-    <ProjectGuid>{6F1A8E2B-4C4A-4E3A-9B60-2E8F5D4C7A12}</ProjectGuid>
     <OutputType>Library</OutputType>
     <RootNamespace>ModelExplorerAddin</RootNamespace>
     <AssemblyName>ModelExplorerAddin</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- COM 注册需要强名称；密钥文件已提升到仓库根，供 Core 与插件共用。 -->
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>ModelExplorerAddin.snk</AssemblyOriginatorKeyFile>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)..\ModelExplorer.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x64' ">
-    <DebugSymbols>false</DebugSymbols>
-    <OutputPath>bin\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x64' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <Optimize>false</Optimize>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x64</PlatformTarget>
-  </PropertyGroup>
+
+  <!--
+    v3.0.0 变更：
+     - 由旧式 csproj + csc.exe 脚本改为标准 SDK 项目，纳入 ModelExplorer.sln。
+     - 删除 AddinSettings：配置改用共享的 ConfigService / AppConfig。
+     - STL 导出与 Bambu 启动改用 ModelExplorer.Core，不再各自维护一份副本。
+     - Interop 引用（含原先缺失的 swpublished）由 Directory.Build.props 统一提供，
+       不再硬编码 D:\SW2022\SOLIDWORKS\。
+  -->
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
+    <ProjectReference Include="..\ModelExplorer.Core\ModelExplorer.Core.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="SolidWorks.Interop.sldworks">
-      <HintPath>D:\SW2022\SOLIDWORKS\SolidWorks.Interop.sldworks.dll</HintPath>
-      <EmbedInteropTypes>false</EmbedInteropTypes>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="SolidWorks.Interop.swconst">
-      <HintPath>D:\SW2022\SOLIDWORKS\SolidWorks.Interop.swconst.dll</HintPath>
-      <EmbedInteropTypes>false</EmbedInteropTypes>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="SolidWorks.Interop.swpublished">
-      <HintPath>D:\SW2022\SOLIDWORKS\SolidWorks.Interop.swpublished.dll</HintPath>
-      <EmbedInteropTypes>false</EmbedInteropTypes>
-      <Private>false</Private>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="src\AddinSettings.cs" />
-    <Compile Include="src\AssemblyInfo.cs" />
-    <Compile Include="src\SettingsForm.cs" />
-    <Compile Include="src\ModelExplorerAddin.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
 </Project>

@@ -1,4 +1,4 @@
 @echo off
 setlocal
-"%~dp0bin\ModelExplorerCli.exe" %*
+"%~dp0bin\Release\ModelExplorerCli.exe" %*
 pause

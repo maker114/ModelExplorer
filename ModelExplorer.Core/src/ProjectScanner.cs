@@ -4,9 +4,12 @@ using System.IO;
 
 namespace ModelExplorer
 {
+    /// <summary>
+    /// 工程目录递归扫描。纯文件系统逻辑，不依赖任何 UI 框架，可直接单元测试。
+    /// </summary>
     public static class ProjectScanner
     {
-        private static readonly HashSet<string> SkipDirs = new HashSet<string>
+        private static readonly HashSet<string> SkipDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "__pycache__", ".git", ".svn", "node_modules"
         };
@@ -14,11 +17,17 @@ namespace ModelExplorer
         public static List<ModelFile> Scan(string root)
         {
             List<ModelFile> entries = new List<ModelFile>();
+            if (string.IsNullOrEmpty(root))
+            {
+                return entries;
+            }
+
             string rootName = Path.GetFileName(root.TrimEnd('\\'));
             if (string.IsNullOrEmpty(rootName))
             {
                 rootName = root;
             }
+
             Stack<string> stack = new Stack<string>();
             stack.Push(root);
 
@@ -49,31 +58,14 @@ namespace ModelExplorer
 
                 foreach (string file in files)
                 {
-                    string ext = Path.GetExtension(file).ToLowerInvariant();
                     ModelKind kind;
-                    if (ext == ".sldprt")
-                    {
-                        kind = ModelKind.Part;
-                    }
-                    else if (ext == ".sldasm")
-                    {
-                        kind = ModelKind.Assembly;
-                    }
-                    else if (ext == ".stl")
-                    {
-                        kind = ModelKind.Stl;
-                    }
-                    else if (ext == ".3mf")
-                    {
-                        kind = ModelKind.ThreeMf;
-                    }
-                    else
+                    if (!TryGetKind(file, out kind))
                     {
                         continue;
                     }
 
                     FileInfo info = new FileInfo(file);
-                    string rel = GetRelativePath(root, file);
+                    string rel = PathHelpers.GetRelativePath(root, file);
                     string folder = Path.GetDirectoryName(rel);
                     string displayFolder = string.IsNullOrEmpty(folder) || folder == "."
                         ? rootName
@@ -86,9 +78,8 @@ namespace ModelExplorer
                         Folder = displayFolder,
                         Kind = kind,
                         IsAssemblyExport = kind == ModelKind.Stl &&
-                                          (Path.GetFileName(file).Contains(" - ") ||
-                                           Path.GetFileName(file).Contains("[装配体导出]")),
-                        TypeLabel = kind == ModelKind.Assembly ? "装配体" : kind == ModelKind.Stl ? "STL" : kind == ModelKind.ThreeMf ? "3MF" : "零件",
+                                          AssemblyExportRule.IsAssemblyExport(Path.GetFileName(file)),
+                        TypeLabel = TypeLabelFor(kind),
                         Size = info.Length,
                         SizeText = HumanSize(info.Length),
                         ModifiedText = info.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss")
@@ -96,41 +87,8 @@ namespace ModelExplorer
                 }
             }
 
-            HashSet<string> sourceNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (ModelFile model in entries)
-            {
-                if (model.Kind == ModelKind.Part || model.Kind == ModelKind.Assembly)
-                {
-                    sourceNames.Add(Path.GetFileNameWithoutExtension(model.Name));
-                }
-            }
-            foreach (ModelFile model in entries)
-            {
-                if (model.Kind == ModelKind.Stl)
-                {
-                    string stlBaseName = Path.GetFileNameWithoutExtension(model.Name);
-                    stlBaseName = stlBaseName.Replace("[装配体导出]", "");
-                    model.IsOrphan = !model.IsAssemblyExport && !sourceNames.Contains(stlBaseName);
-                    model.IsUnorganized = !IsOrganizedStlPath(root, model.Path);
-                }
-            }
-
-            HashSet<string> sourceFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (ModelFile model in entries)
-            {
-                if ((model.Kind == ModelKind.Part || model.Kind == ModelKind.Assembly) && !string.IsNullOrEmpty(model.Folder))
-                {
-                    sourceFolders.Add(model.Folder);
-                }
-            }
-            bool showFolder = sourceFolders.Count > 1;
-            foreach (ModelFile model in entries)
-            {
-                if (model.Kind == ModelKind.Part || model.Kind == ModelKind.Assembly)
-                {
-                    model.FolderVisible = showFolder;
-                }
-            }
+            MarkStlStatuses(root, entries);
+            MarkFolderVisibility(entries);
 
             entries.Sort(delegate(ModelFile a, ModelFile b)
             {
@@ -145,23 +103,106 @@ namespace ModelExplorer
             return entries;
         }
 
-        private static bool IsOrganizedStlPath(string root, string file)
+        public static bool TryGetKind(string file, out ModelKind kind)
         {
-            string fileDir = Path.GetDirectoryName(Path.GetFullPath(file));
-            string dirName = Path.GetFileName(fileDir);
-            return string.Equals(dirName, "STL文件夹", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(dirName, "3MF文件夹", StringComparison.OrdinalIgnoreCase);
+            string ext = Path.GetExtension(file).ToLowerInvariant();
+            if (ext == ".sldprt")
+            {
+                kind = ModelKind.Part;
+                return true;
+            }
+            if (ext == ".sldasm")
+            {
+                kind = ModelKind.Assembly;
+                return true;
+            }
+            if (ext == ".stl")
+            {
+                kind = ModelKind.Stl;
+                return true;
+            }
+            if (ext == ".3mf")
+            {
+                kind = ModelKind.ThreeMf;
+                return true;
+            }
+            kind = ModelKind.Part;
+            return false;
         }
 
-        private static string GetRelativePath(string root, string file)
+        public static string TypeLabelFor(ModelKind kind)
         {
-            string rootFull = Path.GetFullPath(root).TrimEnd('\\') + "\\";
-            string fileFull = Path.GetFullPath(file);
-            if (fileFull.StartsWith(rootFull, StringComparison.OrdinalIgnoreCase))
+            if (kind == ModelKind.Assembly)
             {
-                return fileFull.Substring(rootFull.Length);
+                return "装配体";
             }
-            return fileFull;
+            if (kind == ModelKind.Stl)
+            {
+                return "STL";
+            }
+            if (kind == ModelKind.ThreeMf)
+            {
+                return "3MF";
+            }
+            return "零件";
+        }
+
+        /// <summary>
+        /// 依据 README 规则标记 [未整理] 与 [未对应]：
+        ///  - [未整理]：STL 不在分类文件夹中。
+        ///  - [未对应]：STL 主文件名在零件/装配体主文件名集合中不存在；装配体导出豁免。
+        /// </summary>
+        private static void MarkStlStatuses(string root, List<ModelFile> entries)
+        {
+            HashSet<string> sourceNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ModelFile model in entries)
+            {
+                if (model.Kind == ModelKind.Part || model.Kind == ModelKind.Assembly)
+                {
+                    sourceNames.Add(Path.GetFileNameWithoutExtension(model.Name));
+                }
+            }
+
+            foreach (ModelFile model in entries)
+            {
+                if (model.Kind != ModelKind.Stl)
+                {
+                    continue;
+                }
+
+                string stlBaseName = Path.GetFileNameWithoutExtension(model.Name)
+                    .Replace(AssemblyExportRule.Marker, "");
+                model.IsOrphan = !model.IsAssemblyExport && !sourceNames.Contains(stlBaseName);
+                model.IsUnorganized = !IsOrganizedStlPath(model.Path);
+            }
+        }
+
+        private static void MarkFolderVisibility(List<ModelFile> entries)
+        {
+            HashSet<string> sourceFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (ModelFile model in entries)
+            {
+                if ((model.Kind == ModelKind.Part || model.Kind == ModelKind.Assembly) &&
+                    !string.IsNullOrEmpty(model.Folder))
+                {
+                    sourceFolders.Add(model.Folder);
+                }
+            }
+
+            bool showFolder = sourceFolders.Count > 1;
+            foreach (ModelFile model in entries)
+            {
+                if (model.Kind == ModelKind.Part || model.Kind == ModelKind.Assembly)
+                {
+                    model.FolderVisible = showFolder;
+                }
+            }
+        }
+
+        private static bool IsOrganizedStlPath(string file)
+        {
+            string fileDir = Path.GetDirectoryName(Path.GetFullPath(file));
+            return WorkspaceNames.IsClassificationFolder(Path.GetFileName(fileDir));
         }
 
         private static string HumanSize(long bytes)

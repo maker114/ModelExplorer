@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>ModelExplorer.Tests</RootNamespace>
+    <AssemblyName>ModelExplorer.Tests</AssemblyName>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>3.0.0</Version>
+  </PropertyGroup>
+
+  <!--
+    v3.0.0 新增：命名规则、扫描规则、整理规则此前完全没有测试覆盖。
+    这里刻意不引入 xunit/nunit 等需要联网还原的依赖，保持离线可构建，
+    用最小断言助手覆盖 Core 的纯逻辑（不触碰 SolidWorks COM 与用户配置）。
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\ModelExplorer.Core\ModelExplorer.Core.csproj" />
+  </ItemGroup>
+
+</Project>

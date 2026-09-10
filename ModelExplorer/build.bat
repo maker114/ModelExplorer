@@ -1,5 +1,8 @@
 @echo off
 setlocal
+rem Build the main application.
+rem v3.0.0: the GUI depends on ModelExplorer.Core, which is built too.
+rem To build every project and run the test suite, use build.ps1 in the repo root.
 set "DOTNET=C:\Program Files\dotnet\dotnet.exe"
 if not exist "%DOTNET%" set "DOTNET=dotnet"
 
