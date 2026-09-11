@@ -40,7 +40,7 @@ namespace ModelExplorer
             Background = Brushes.Transparent;
             ResizeMode = ResizeMode.NoResize;
             Width = 560;
-            Height = 830;
+            Height = 900;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Icon = AppIcon.WindowIcon;
 
@@ -234,6 +234,8 @@ namespace ModelExplorer
 
             StackPanel unitsPanel = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
             unitsPanel.Children.Add(OptionLabel("STL 单位", theme));
+            // 小字说明放在下拉框上方，与标签一起构成该字段的说明
+            unitsPanel.Children.Add(HintText("需与切片软件保持一致。", theme, 0, 6));
             _stlUnitsCombo = CreateCombo(theme);
             _stlUnitsCombo.Items.Add("mm");
             _stlUnitsCombo.Items.Add("cm");
@@ -242,12 +244,12 @@ namespace ModelExplorer
             _stlUnitsCombo.SelectedItem = SolidWorksStlExporter.NormalizeUnits(_source.StlUnits);
             StyleComboBox(_stlUnitsCombo, theme);
             unitsPanel.Children.Add(_stlUnitsCombo);
-            // 说明文字与该列下拉框左对齐，避免被误认为属于另一列
-            unitsPanel.Children.Add(HintText("需与切片软件保持一致。", theme, 6, 0));
             stlOptionsRow.Children.Add(unitsPanel);
 
             StackPanel qualityPanel = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
             qualityPanel.Children.Add(OptionLabel("STL 质量", theme));
+            // 小字说明放在下拉框上方，与标签一起构成该字段的说明
+            qualityPanel.Children.Add(HintText("质量越高越精细，文件也越大。", theme, 0, 6));
             _stlQualityCombo = CreateCombo(theme);
             foreach (string qualityName in StlQualityLabels.DisplayNames)
             {
@@ -256,8 +258,6 @@ namespace ModelExplorer
             _stlQualityCombo.SelectedItem = StlQualityLabels.ToDisplay(_source.StlQuality);
             StyleComboBox(_stlQualityCombo, theme);
             qualityPanel.Children.Add(_stlQualityCombo);
-            // 说明文字与该列下拉框左对齐，避免被误认为属于另一列
-            qualityPanel.Children.Add(HintText("质量越高越精细，文件也越大。", theme, 6, 0));
             Grid.SetColumn(qualityPanel, 1);
             stlOptionsRow.Children.Add(qualityPanel);
 
@@ -467,17 +467,34 @@ namespace ModelExplorer
             };
         }
 
-        private static TextBlock SectionTitle(string text, double topMargin = 0)
+        /// <summary>
+        /// 分区标题：用强调色高亮，并在下方加一条 1px 分割线，
+        /// 把各设置分区在视觉上分开。
+        /// </summary>
+        private static FrameworkElement SectionTitle(string text, double topMargin = 0)
         {
-            return new TextBlock
+            StackPanel header = new StackPanel
             {
-                Text = text,
-                Foreground = ThemeManager.Current.MutedBrush,
-                FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 12,
-                FontWeight = FontWeights.Bold,
                 Margin = new Thickness(0, topMargin, 0, 0)
             };
+
+            header.Children.Add(new TextBlock
+            {
+                Text = text,
+                Foreground = ThemeManager.Current.AccentBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 13,
+                FontWeight = FontWeights.Bold
+            });
+
+            header.Children.Add(new Border
+            {
+                Height = 1,
+                Background = ThemeManager.Current.BorderBrush,
+                Margin = new Thickness(0, 6, 0, 0)
+            });
+
+            return header;
         }
 
         private static Button MakeButton(string text, RoutedEventHandler handler, bool primary, double width, double height)
