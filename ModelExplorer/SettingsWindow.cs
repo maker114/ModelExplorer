@@ -69,7 +69,7 @@ namespace ModelExplorer
                 Text = "设置",
                 Foreground = theme.TextBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 18,
+                FontSize = 19,
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center
             };
@@ -98,7 +98,7 @@ namespace ModelExplorer
                 Text = "设置 bambu-studio.exe 的完整路径，适配不同电脑",
                 Foreground = theme.MutedBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 11,
+                FontSize = 12,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 6, 0, 10)
             });
@@ -115,7 +115,7 @@ namespace ModelExplorer
                 Padding = new Thickness(0),
                 CaretBrush = theme.TextBrush,
                 FontFamily = new FontFamily("Consolas"),
-                FontSize = 11,
+                FontSize = 12,
                 VerticalContentAlignment = VerticalAlignment.Center
             };
             Border pathShell = new Border
@@ -142,7 +142,7 @@ namespace ModelExplorer
                 Text = "设置 SLDWORKS.exe 的完整路径，用于 API 调用",
                 Foreground = theme.MutedBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 11,
+                FontSize = 12,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 6, 0, 10)
             });
@@ -159,7 +159,7 @@ namespace ModelExplorer
                 Padding = new Thickness(0),
                 CaretBrush = theme.TextBrush,
                 FontFamily = new FontFamily("Consolas"),
-                FontSize = 11,
+                FontSize = 12,
                 VerticalContentAlignment = VerticalAlignment.Center
             };
             Border solidWorksPathShell = new Border
@@ -224,7 +224,7 @@ namespace ModelExplorer
                 Text = "与 SolidWorks 插件、命令行工具共用同一份配置",
                 Foreground = theme.MutedBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 11,
+                FontSize = 12,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, 6, 0, 10)
             });
@@ -290,7 +290,7 @@ namespace ModelExplorer
                 Padding = new Thickness(8, 6, 8, 6),
                 VerticalContentAlignment = VerticalAlignment.Center,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 12,
+                FontSize = 13,
                 Margin = new Thickness(0, 8, 0, 0)
             };
             foreach (AppTheme preset in ThemeManager.Presets)
@@ -315,7 +315,7 @@ namespace ModelExplorer
                 Padding = new Thickness(8, 6, 8, 6),
                 VerticalContentAlignment = VerticalAlignment.Center,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 12,
+                FontSize = 13,
                 Margin = new Thickness(0, 8, 0, 0)
             };
             for (int i = 9; i <= 16; i++)
@@ -323,6 +323,7 @@ namespace ModelExplorer
                 _fontSizeCombo.Items.Add(i.ToString());
             }
             _fontSizeCombo.SelectedItem = _source.FontSize.ToString();
+
             StyleComboBox(_fontSizeCombo, theme);
             body.Children.Add(_fontSizeCombo);
 
@@ -428,7 +429,7 @@ namespace ModelExplorer
                 Text = text,
                 Foreground = theme.MutedBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 11,
+                FontSize = 12,
                 Margin = new Thickness(0, 0, 0, 4)
             };
         }
@@ -445,7 +446,7 @@ namespace ModelExplorer
                 Text = label,
                 Foreground = theme.TextBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 12,
+                FontSize = 13,
                 VerticalAlignment = VerticalAlignment.Center
             };
             Grid.SetColumn(text, 0);
@@ -464,7 +465,7 @@ namespace ModelExplorer
                 Text = text,
                 Foreground = theme.MutedBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 10,
+                FontSize = 11,
                 TextWrapping = TextWrapping.Wrap,
                 Margin = new Thickness(0, topMargin, 0, bottomMargin)
             };
@@ -481,7 +482,7 @@ namespace ModelExplorer
                 Padding = new Thickness(8, 6, 8, 6),
                 VerticalContentAlignment = VerticalAlignment.Center,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 12
+                FontSize = 13
             };
         }
 
@@ -501,7 +502,7 @@ namespace ModelExplorer
                 Text = text,
                 Foreground = ThemeManager.Current.AccentBrush,
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 13,
+                FontSize = 15,
                 FontWeight = FontWeights.Bold
             });
 
@@ -526,7 +527,7 @@ namespace ModelExplorer
                 Foreground = primary ? new SolidColorBrush(Color.FromRgb(0x15, 0x15, 0x15)) : ThemeManager.Current.TextBrush,
                 BorderThickness = new Thickness(0),
                 FontFamily = new FontFamily("Microsoft YaHei UI"),
-                FontSize = 12,
+                FontSize = 13,
                 FontWeight = primary ? FontWeights.Bold : FontWeights.Normal,
                 Cursor = Cursors.Hand
             };

@@ -616,7 +616,7 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 3.1.0"
+              <TextBlock Text="V 3.1.1"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -720,27 +720,27 @@
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="零件"
                                Foreground="{DynamicResource MutedBrush}"
-                               FontSize="11" Margin="0,3" />
+                               FontSize="12" Margin="0,3" />
                     <TextBlock x:Name="PartCountText" Grid.Row="0" Grid.Column="1" Text="0"
                                Foreground="{DynamicResource TextBrush}"
-                               FontSize="11" FontWeight="Bold" Margin="0,3" />
+                               FontSize="12" FontWeight="Bold" Margin="0,3" />
                     <TextBlock Grid.Row="1" Grid.Column="0" Text="装配体"
                                Foreground="{DynamicResource MutedBrush}"
-                               FontSize="11" Margin="0,3" />
+                               FontSize="12" Margin="0,3" />
                     <TextBlock x:Name="AsmCountText" Grid.Row="1" Grid.Column="1" Text="0"
                                Foreground="{DynamicResource TextBrush}"
-                               FontSize="11" FontWeight="Bold" Margin="0,3" />
+                               FontSize="12" FontWeight="Bold" Margin="0,3" />
                     <TextBlock Grid.Row="2" Grid.Column="0" Text="文件总数"
                                Foreground="{DynamicResource MutedBrush}"
-                               FontSize="11" Margin="0,3" />
+                               FontSize="12" Margin="0,3" />
                     <TextBlock x:Name="TotalCountText" Grid.Row="2" Grid.Column="1" Text="0"
                                Foreground="{DynamicResource TextBrush}"
-                               FontSize="11" FontWeight="Bold" Margin="0,3" />
+                               FontSize="12" FontWeight="Bold" Margin="0,3" />
                   </Grid>
                   <TextBlock Text="点击查看详细统计..."
                              Foreground="{DynamicResource AccentBrush}"
                              FontFamily="Microsoft YaHei UI"
-                             FontSize="10"
+                             FontSize="11"
                              FontWeight="Bold"
                              Margin="0,8,0,0" />
                 </StackPanel>
