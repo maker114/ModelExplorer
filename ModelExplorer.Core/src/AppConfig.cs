@@ -19,6 +19,14 @@ namespace ModelExplorer
         public bool OpenBambu { get; set; }
         public List<string> ProjectNameUnchecked { get; set; }
 
+        // ---- 文件整理 ----
+        /// <summary>
+        /// 整理 STL / 3MF 时是否按文件夹整理：true = 在每个文件所在目录下分别使用
+        /// `STL文件夹` / `3MF文件夹`；false = 集中到工程根目录的这两个文件夹。
+        /// V3.0.7 起由设置窗口维护（此前是主界面上的开关，且不保存、每次启动都重置）。
+        /// </summary>
+        public bool OrganizeByFolder { get; set; }
+
         // ---- STL 导出（GUI 开关、插件与 CLI 共用） ----
         public bool KeepHistory { get; set; }
 
@@ -58,6 +66,7 @@ namespace ModelExplorer
             config.FontSize = DefaultFontSize;
             config.OpenBambu = true;
             config.ProjectNameUnchecked = new List<string>();
+            config.OrganizeByFolder = false;
             config.KeepHistory = false;
             config.BinaryStl = true;
             config.StlUnits = DefaultStlUnits;

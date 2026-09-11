@@ -184,10 +184,10 @@ namespace ModelExplorer
             _visibleAssemblies.Clear();
             _visibleStls.Clear();
 
+            // V3.0.7：左侧「统计」只显示零件、装配体与文件总数；
+            // STL / 3MF 数量不在统计框里显示（详细统计窗口不受影响）。
             int parts = 0;
             int asms = 0;
-            int stls = 0;
-            int threeMfs = 0;
             foreach (ModelFile model in _allModels)
             {
                 if (model.Kind == ModelKind.Part)
@@ -198,25 +198,13 @@ namespace ModelExplorer
                 {
                     asms++;
                 }
-                else if (model.Kind == ModelKind.Stl)
-                {
-                    stls++;
-                }
-                else
-                {
-                    threeMfs++;
-                }
             }
 
             PartCountText.Text = parts.ToString();
             AsmCountText.Text = asms.ToString();
-            StlCountText.Text = stls.ToString();
-            ThreeMfCountText.Text = threeMfs.ToString();
             TotalCountText.Text = _allModels.Count.ToString();
             UiAnimation.Pulse(PartCountText);
             UiAnimation.Pulse(AsmCountText);
-            UiAnimation.Pulse(StlCountText);
-            UiAnimation.Pulse(ThreeMfCountText);
             UiAnimation.Pulse(TotalCountText);
             ApplyFilter();
             ScanButton.IsEnabled = true;
@@ -594,7 +582,7 @@ namespace ModelExplorer
 
             SetStatusText("正在整理 STL / 3MF 文件");
             Log("开始整理 STL / 3MF 文件");
-            bool byFolder = OrganizeByFolderCheck.IsChecked == true;
+            bool byFolder = _config.OrganizeByFolder;
             UndoProjectNameButton.IsEnabled = false;
 
             ThreadPool.QueueUserWorkItem(delegate

@@ -57,6 +57,7 @@ namespace ModelExplorer
                         config.FontSize = loaded.FontSize > 0 ? loaded.FontSize : AppConfig.DefaultFontSize;
                         config.OpenBambu = loaded.OpenBambu;
                         config.ProjectNameUnchecked = loaded.ProjectNameUnchecked ?? new List<string>();
+                        config.OrganizeByFolder = loaded.OrganizeByFolder;
                         config.KeepHistory = loaded.KeepHistory;
                         // 保持可空：字段缺失（旧版配置）时为 null，由 UseBinaryStl 解释为“二进制”
                         config.BinaryStl = loaded.BinaryStl;

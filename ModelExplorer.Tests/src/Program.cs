@@ -309,6 +309,11 @@ namespace ModelExplorer.Tests
             CheckTrue("默认配置为二进制", defaults.UseBinaryStl);
             CheckEqual("默认单位", "mm", defaults.StlUnits);
             CheckEqual("默认质量", "Fine", defaults.StlQuality);
+            CheckFalse("默认不按文件夹整理", defaults.OrganizeByFolder);
+
+            // V3.0.7：按文件夹整理由设置窗口维护并写入配置
+            AppConfig organizeOn = serializer.Deserialize<AppConfig>("{\"OrganizeByFolder\":true}");
+            CheckTrue("按文件夹整理可持久化", organizeOn.OrganizeByFolder);
 
             AppConfig roundTrip = serializer.Deserialize<AppConfig>(serializer.Serialize(defaults));
             CheckTrue("默认配置序列化往返后仍为二进制", roundTrip.UseBinaryStl);

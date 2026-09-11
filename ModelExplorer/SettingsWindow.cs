@@ -24,6 +24,7 @@ namespace ModelExplorer
         private ToggleSwitch _binaryStlSwitch;
         private ToggleSwitch _keepHistorySwitch;
         private ToggleSwitch _openBambuSwitch;
+        private ToggleSwitch _organizeByFolderSwitch;
         private ComboBox _stlUnitsCombo;
         private ComboBox _stlQualityCombo;
 
@@ -40,7 +41,7 @@ namespace ModelExplorer
             Background = Brushes.Transparent;
             ResizeMode = ResizeMode.NoResize;
             Width = 560;
-            Height = 900;
+            Height = 990;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Icon = AppIcon.WindowIcon;
 
@@ -198,6 +199,20 @@ namespace ModelExplorer
             body.Children.Add(MakeToggleRow("导出后打开 Bambu Studio", _openBambuSwitch, theme, 0));
             body.Children.Add(HintText(
                 "导出完成后自动启动 Bambu Studio 并载入刚导出的 STL。",
+                theme, 2, 0));
+
+            // ---- 文件整理（V3.0.7 从主界面左侧栏移入）----
+            body.Children.Add(SectionTitle("文件整理", 22));
+
+            _organizeByFolderSwitch = new ToggleSwitch
+            {
+                IsChecked = _source.OrganizeByFolder,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            body.Children.Add(MakeToggleRow("按文件夹整理", _organizeByFolderSwitch, theme, 8));
+            body.Children.Add(HintText(
+                "开启时在每个文件所在目录下分别使用「STL文件夹 / 3MF文件夹」；" +
+                "关闭时把散落的 STL / 3MF 集中到工程根目录的这两个文件夹。",
                 theme, 2, 0));
 
             // ---- STL 导出 ----
@@ -391,6 +406,7 @@ namespace ModelExplorer
                 LastDir = _source.LastDir,
                 KeepHistory = _keepHistorySwitch.IsChecked == true,
                 OpenBambu = _openBambuSwitch.IsChecked == true,
+                OrganizeByFolder = _organizeByFolderSwitch.IsChecked == true,
                 BinaryStl = _binaryStlSwitch.IsChecked == true,
                 StlUnits = (string)_stlUnitsCombo.SelectedItem,
                 StlQuality = StlQualityLabels.ToToken((string)_stlQualityCombo.SelectedItem),
