@@ -41,7 +41,9 @@ namespace ModelExplorer
             Background = Brushes.Transparent;
             ResizeMode = ResizeMode.NoResize;
             Width = 560;
-            Height = 990;
+            // V3.1.0：分区变多后窗口不再一路拉长（曾到 990），改为固定常规高度，
+            // 中间一栏用 ScrollViewer 滚动；页眉与「取消 / 保存」按钮固定不动。
+            Height = 720;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Icon = AppIcon.WindowIcon;
 
