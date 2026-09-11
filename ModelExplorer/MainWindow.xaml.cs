@@ -97,9 +97,21 @@ namespace ModelExplorer
         {
             // 「保留历史版本 / 导出后打开 Bambu Studio」于 V3.0.5 移入设置窗口，
             // 导出时直接读取 _config，不再有主界面控件。
+            ApplyOrganizeModeToUi();
             PartList.ItemsSource = _visibleParts;
             AsmList.ItemsSource = _visibleAssemblies;
             StlList.ItemsSource = _visibleStls;
+        }
+
+        /// <summary>
+        /// V3.1.3：「按文件夹整理」开关在设置窗口里，主界面用按钮文本回显当前模式，
+        /// 免得点下去才知道文件会被整理到哪里。设置保存后主窗口会重建，因此这里就够了。
+        /// </summary>
+        private void ApplyOrganizeModeToUi()
+        {
+            OrganizeFilesButton.Content = _config.OrganizeByFolder
+                ? "按文件夹整理文件"
+                : "按根目录整理文件";
         }
 
         private void Minimize_Click(object sender, RoutedEventArgs e)
@@ -567,10 +579,15 @@ namespace ModelExplorer
             }
 
             string root = _config.LastDir;
+            bool byFolder = _config.OrganizeByFolder;
             if (HasMultipleSourceFolders())
             {
+                // 提示文案跟随当前模式，别和按钮上的「按…整理文件」自相矛盾
+                string target = byFolder
+                    ? "移动到各自所在目录的「" + WorkspaceNames.StlFolderName + " / " + WorkspaceNames.ThreeMfFolderName + "」中"
+                    : "集中到工程根目录的「" + WorkspaceNames.StlFolderName + " / " + WorkspaceNames.ThreeMfFolderName + "」中";
                 ConfirmDialog confirm = new ConfirmDialog(
-                    "检测到零件/装配体来自多个文件夹。整理后 STL 和 3MF 会集中到分类文件夹中，是否继续？",
+                    "检测到零件/装配体来自多个文件夹。按当前设置，整理后 STL / 3MF 会" + target + "，是否继续？",
                     "确认整理");
                 confirm.Owner = this;
                 confirm.ShowDialog();
@@ -581,8 +598,7 @@ namespace ModelExplorer
             }
 
             SetStatusText("正在整理 STL / 3MF 文件");
-            Log("开始整理 STL / 3MF 文件");
-            bool byFolder = _config.OrganizeByFolder;
+            Log("开始整理 STL / 3MF 文件（" + (byFolder ? "按文件夹" : "按根目录") + "）");
             UndoProjectNameButton.IsEnabled = false;
 
             ThreadPool.QueueUserWorkItem(delegate
