@@ -6,20 +6,6 @@ using System.Windows.Media;
 
 namespace ModelExplorer
 {
-    public class FolderStat
-    {
-        public string Folder { get; set; }
-        public int Parts { get; set; }
-        public int Assemblies { get; set; }
-        public int Stls { get; set; }
-        public int ThreeMfs { get; set; }
-
-        public int Total
-        {
-            get { return Parts + Assemblies + Stls + ThreeMfs; }
-        }
-    }
-
     public class StatisticsWindow : Window
     {
         public StatisticsWindow(List<FolderStat> stats)

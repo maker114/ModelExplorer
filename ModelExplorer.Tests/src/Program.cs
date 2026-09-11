@@ -32,6 +32,7 @@ namespace ModelExplorer.Tests
             ProjectNamePlannerTests();
             ProjectScannerTests();
             FileOrganizerTests();
+            FolderStatisticsTests();
             PathHelpersTests();
             ConfigDefaultTests();
 
@@ -317,6 +318,75 @@ namespace ModelExplorer.Tests
 
             AppConfig roundTrip = serializer.Deserialize<AppConfig>(serializer.Serialize(defaults));
             CheckTrue("默认配置序列化往返后仍为二进制", roundTrip.UseBinaryStl);
+        }
+
+        // ---------------------------------------------------------------- 详细统计汇总
+
+        /// <summary>
+        /// V3.1.2 回归：位于分类文件夹中的文件必须计入**其所属文件夹**，
+        /// 不能被整条跳过——否则整理过的工程里 STL / 3MF 数量恒为 0，
+        /// 而侧栏又已不显示这两个数量，用户就再也看不到它们了。
+        /// </summary>
+        private static void FolderStatisticsTests()
+        {
+            CheckEqual("空路径 → 根目录", "根目录", FolderStatistics.GetOwningFolder(""));
+            CheckEqual("null → 根目录", "根目录", FolderStatistics.GetOwningFolder(null));
+            CheckEqual("普通文件夹保持不变", @"工程\子工程", FolderStatistics.GetOwningFolder(@"工程\子工程"));
+            CheckEqual("去掉 STL 分类文件夹", @"工程\子工程", FolderStatistics.GetOwningFolder(@"工程\子工程\STL文件夹"));
+            CheckEqual("去掉 3MF 分类文件夹", @"工程\子工程", FolderStatistics.GetOwningFolder(@"工程\子工程\3MF文件夹"));
+            CheckEqual("连续两层分类文件夹全部去掉", "工程", FolderStatistics.GetOwningFolder(@"工程\STL文件夹\3MF文件夹"));
+            CheckEqual("根目录下的分类文件夹归到工程根", "工程", FolderStatistics.GetOwningFolder(@"工程\STL文件夹"));
+
+            List<ModelFile> files = new List<ModelFile>();
+            files.Add(MakeFileEntry("工程", "A.sldprt", ModelKind.Part));
+            files.Add(MakeFileEntry("工程", "B.sldasm", ModelKind.Assembly));
+            files.Add(MakeFileEntry(@"工程\STL文件夹", "A.stl", ModelKind.Stl));
+            files.Add(MakeFileEntry(@"工程\子工程", "C.sldprt", ModelKind.Part));
+            files.Add(MakeFileEntry(@"工程\子工程\STL文件夹", "C.stl", ModelKind.Stl));
+            files.Add(MakeFileEntry(@"工程\子工程\3MF文件夹", "C.3mf", ModelKind.ThreeMf));
+
+            List<FolderStat> stats = FolderStatistics.Build(files);
+            CheckEqual("分类文件夹不单独成行", 2, stats.Count);
+
+            FolderStat root = FindStat(stats, "工程");
+            CheckEqual("根行 零件", 1, root.Parts);
+            CheckEqual("根行 装配体", 1, root.Assemblies);
+            CheckEqual("根行 STL（来自 STL文件夹）", 1, root.Stls);
+            CheckEqual("根行 总计", 3, root.Total);
+
+            FolderStat sub = FindStat(stats, @"工程\子工程");
+            CheckEqual("子工程 零件", 1, sub.Parts);
+            CheckEqual("子工程 STL（来自 STL文件夹）", 1, sub.Stls);
+            CheckEqual("子工程 3MF（来自 3MF文件夹）", 1, sub.ThreeMfs);
+            CheckEqual("子工程 总计", 3, sub.Total);
+
+            // 单文件夹工程：所有文件归到一行，各类数量都能看到（本次修复的目标场景）
+            List<ModelFile> single = new List<ModelFile>();
+            single.Add(MakeFileEntry("工程", "A.sldprt", ModelKind.Part));
+            single.Add(MakeFileEntry(@"工程\STL文件夹", "A.stl", ModelKind.Stl));
+            single.Add(MakeFileEntry(@"工程\3MF文件夹", "A.3mf", ModelKind.ThreeMf));
+            List<FolderStat> singleStats = FolderStatistics.Build(single);
+            CheckEqual("单文件夹工程只有一行", 1, singleStats.Count);
+            CheckEqual("单文件夹工程 零件数量", 1, singleStats[0].Parts);
+            CheckEqual("单文件夹工程 STL 数量", 1, singleStats[0].Stls);
+            CheckEqual("单文件夹工程 3MF 数量", 1, singleStats[0].ThreeMfs);
+        }
+
+        private static ModelFile MakeFileEntry(string folder, string name, ModelKind kind)
+        {
+            return new ModelFile { Folder = folder, Name = name, Kind = kind };
+        }
+
+        private static FolderStat FindStat(List<FolderStat> stats, string folder)
+        {
+            foreach (FolderStat stat in stats)
+            {
+                if (string.Equals(stat.Folder, folder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return stat;
+                }
+            }
+            throw new InvalidOperationException("未找到统计行：" + folder);
         }
 
         private static void PathHelpersTests()

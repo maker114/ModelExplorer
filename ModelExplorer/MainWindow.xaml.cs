@@ -676,60 +676,17 @@ namespace ModelExplorer
         {
             if (_allModels.Count == 0)
             {
-                return;
-            }
-            if (!HasMultipleSourceFolders())
-            {
-                Log("当前只有单个文件夹，无需查看详细统计");
+                Log("尚未扫描到模型，无法查看详细统计");
                 return;
             }
 
-            List<FolderStat> stats = BuildFolderStats();
+            // V3.1.2：不再要求“零件来自多个文件夹”才允许打开。
+            // 侧栏统计已不显示 STL / 3MF 数量，详细窗口是查看各类文件数量的入口，
+            // 单文件夹工程同样需要它。汇总逻辑在 Core 的 FolderStatistics 中。
+            List<FolderStat> stats = FolderStatistics.Build(_allModels);
             StatisticsWindow window = new StatisticsWindow(stats);
             window.Owner = this;
             window.ShowDialog();
-        }
-
-        private List<FolderStat> BuildFolderStats()
-        {
-            Dictionary<string, FolderStat> map = new Dictionary<string, FolderStat>(StringComparer.OrdinalIgnoreCase);
-            foreach (ModelFile model in _allModels)
-            {
-                if (WorkspaceNames.ContainsClassificationSegment(model.Folder))
-                {
-                    continue;
-                }
-                string key = string.IsNullOrEmpty(model.Folder) ? "根目录" : model.Folder;
-                FolderStat stat;
-                if (!map.TryGetValue(key, out stat))
-                {
-                    stat = new FolderStat { Folder = key };
-                    map[key] = stat;
-                }
-                if (model.Kind == ModelKind.Part)
-                {
-                    stat.Parts++;
-                }
-                else if (model.Kind == ModelKind.Assembly)
-                {
-                    stat.Assemblies++;
-                }
-                else if (model.Kind == ModelKind.Stl)
-                {
-                    stat.Stls++;
-                }
-                else if (model.Kind == ModelKind.ThreeMf)
-                {
-                    stat.ThreeMfs++;
-                }
-            }
-
-            List<FolderStat> list = new List<FolderStat>(map.Values);
-            list.Sort(delegate(FolderStat a, FolderStat b)
-            {
-                return string.Compare(a.Folder, b.Folder, StringComparison.OrdinalIgnoreCase);
-            });
-            return list;
         }
 
         private void UndoOrganize_Click(object sender, RoutedEventArgs e)
