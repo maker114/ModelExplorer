@@ -11,7 +11,10 @@ namespace ModelExplorer
 
             if (e.Args.Length > 0 && e.Args[0] == "--smoke-settings")
             {
-                SettingsWindow smoke = new SettingsWindow(ConfigService.Load());
+                // 冒烟也按真实配置应用主题与毛玻璃，否则测不到用户实际会看到的界面
+                AppConfig smokeConfig = ConfigService.Load();
+                ThemeManager.Apply(smokeConfig);
+                SettingsWindow smoke = new SettingsWindow(smokeConfig);
                 smoke.Close();
                 Shutdown();
                 return;

@@ -16,6 +16,9 @@ namespace ModelExplorer
         /// </summary>
         private const double ActionColumnWidth = 88;
 
+        /// <summary>毛玻璃强度档位，下标即 AppConfig.GlassStrength 的取值。</summary>
+        private static readonly string[] GlassStrengthLabels = { "轻柔", "标准", "浓郁" };
+
         private readonly AppConfig _source;
         private TextBox _bambuPathBox;
         private TextBox _solidWorksPathBox;
@@ -25,6 +28,8 @@ namespace ModelExplorer
         private ToggleSwitch _keepHistorySwitch;
         private ToggleSwitch _openBambuSwitch;
         private ToggleSwitch _organizeByFolderSwitch;
+        private ToggleSwitch _glassSwitch;
+        private ComboBox _glassStrengthCombo;
         private ComboBox _stlUnitsCombo;
         private ComboBox _stlQualityCombo;
 
@@ -305,6 +310,37 @@ namespace ModelExplorer
             StyleComboBox(_themeCombo, theme);
             body.Children.Add(_themeCombo);
 
+            // ---- 毛玻璃 ----
+            body.Children.Add(SectionTitle("毛玻璃", 22));
+
+            _glassSwitch = new ToggleSwitch
+            {
+                IsChecked = _source.UseGlass,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            body.Children.Add(MakeToggleRow("毛玻璃效果", _glassSwitch, theme, 8));
+            body.Children.Add(HintText(
+                "半透明玻璃面板 + 极光背景。关闭后回到纯色界面，低配机器或远程桌面下可关掉。",
+                theme, 2, 12));
+
+            _glassStrengthCombo = CreateCombo(theme);
+            _glassStrengthCombo.Margin = new Thickness(0, 8, 0, 0);
+            foreach (string label in GlassStrengthLabels)
+            {
+                _glassStrengthCombo.Items.Add(label);
+            }
+            _glassStrengthCombo.SelectedIndex = _source.GlassStrengthValue;
+            StyleComboBox(_glassStrengthCombo, theme);
+            body.Children.Add(_glassStrengthCombo);
+            body.Children.Add(HintText(
+                "档位越高，面板越透、背景模糊与光斑越明显。",
+                theme, 6, 0));
+
+            // 关掉毛玻璃时强度无意义，直接置灰，避免出现「改了却看不出效果」的设置
+            _glassStrengthCombo.IsEnabled = _source.UseGlass;
+            _glassSwitch.Checked += delegate { _glassStrengthCombo.IsEnabled = true; };
+            _glassSwitch.Unchecked += delegate { _glassStrengthCombo.IsEnabled = false; };
+
             body.Children.Add(SectionTitle("字体大小", 22));
             _fontSizeCombo = new ComboBox
             {
@@ -417,6 +453,11 @@ namespace ModelExplorer
                 SolidWorksPath = _solidWorksPathBox.Text.Trim(),
                 Theme = (string)_themeCombo.SelectedItem,
                 FontSize = fontSize,
+                Glass = _glassSwitch.IsChecked == true,
+                // 下拉被清空时退回默认档，避免存出 -1 让 GlassStrengthValue 反复夹取
+                GlassStrength = _glassStrengthCombo.SelectedIndex < 0
+                    ? AppConfig.DefaultGlassStrength
+                    : _glassStrengthCombo.SelectedIndex,
                 ProjectNameUnchecked = _source.ProjectNameUnchecked ?? new System.Collections.Generic.List<string>()
             };
             DialogResult = true;

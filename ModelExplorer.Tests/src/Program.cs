@@ -318,6 +318,28 @@ namespace ModelExplorer.Tests
 
             AppConfig roundTrip = serializer.Deserialize<AppConfig>(serializer.Serialize(defaults));
             CheckTrue("默认配置序列化往返后仍为二进制", roundTrip.UseBinaryStl);
+
+            // V3.2.0：毛玻璃开关同样必须可空 —— 旧配置里没有该字段，
+            // 用 bool 会让老用户升级后被静默关掉毛玻璃。
+            CheckTrue("旧配置缺少 Glass 字段时反序列化为 null", legacy.Glass == null);
+            CheckTrue("旧配置仍启用毛玻璃", legacy.UseGlass);
+            CheckEqual("旧配置的玻璃强度取默认档", AppConfig.DefaultGlassStrength, legacy.GlassStrengthValue);
+            CheckTrue("默认配置启用毛玻璃", defaults.UseGlass);
+            CheckEqual("默认玻璃强度为标准档", 1, defaults.GlassStrengthValue);
+
+            AppConfig glassOff = serializer.Deserialize<AppConfig>("{\"Glass\":false}");
+            CheckFalse("显式 false 时关闭毛玻璃", glassOff.UseGlass);
+
+            AppConfig glassRoundTrip = serializer.Deserialize<AppConfig>(serializer.Serialize(defaults));
+            CheckTrue("毛玻璃开关可持久化", glassRoundTrip.UseGlass);
+            CheckEqual("毛玻璃强度可持久化", 1, glassRoundTrip.GlassStrengthValue);
+
+            AppConfig strengthLow = serializer.Deserialize<AppConfig>("{\"GlassStrength\":0}");
+            CheckEqual("强度 0（轻柔）不被当成缺省值", 0, strengthLow.GlassStrengthValue);
+            AppConfig strengthHigh = serializer.Deserialize<AppConfig>("{\"GlassStrength\":9}");
+            CheckEqual("越界强度夹到浓郁档", 2, strengthHigh.GlassStrengthValue);
+            AppConfig strengthNegative = serializer.Deserialize<AppConfig>("{\"GlassStrength\":-3}");
+            CheckEqual("负数强度夹到轻柔档", 0, strengthNegative.GlassStrengthValue);
         }
 
         // ---------------------------------------------------------------- 详细统计汇总

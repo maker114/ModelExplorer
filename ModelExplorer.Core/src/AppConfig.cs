@@ -49,6 +49,22 @@ namespace ModelExplorer
             get { return BinaryStl != false; }
         }
 
+        // ---- 界面毛玻璃 ----
+        /// <summary>
+        /// 是否启用毛玻璃界面（半透明玻璃面板 + 极光背景）。
+        ///
+        /// 必须可空，理由同 BinaryStl：v3.1.3 及更早版本的 config.json 里没有这个字段，
+        /// 若用 bool，反序列化缺失字段会得到 false，老用户升级后会被静默关掉毛玻璃。
+        /// 缺失（null）表示沿用新版本的默认观感，即开启。请统一用 <see cref="UseGlass"/> 取值。
+        /// </summary>
+        public bool? Glass { get; set; }
+
+        /// <summary>
+        /// 毛玻璃强度：0 = 轻柔，1 = 标准，2 = 浓郁。同样可空，缺失时按
+        /// <see cref="DefaultGlassStrength"/> 处理，越界值由 <see cref="GlassStrengthValue"/> 夹回。
+        /// </summary>
+        public int? GlassStrength { get; set; }
+
         // ---- 外部程序路径 ----
         public string BambuPath { get; set; }
         public string SolidWorksPath { get; set; }
@@ -57,6 +73,31 @@ namespace ModelExplorer
         public const int DefaultFontSize = 12;
         public const string DefaultStlUnits = "mm";
         public const string DefaultStlQuality = "Fine";
+        public const int DefaultGlassStrength = 1;
+
+        /// <summary>实际生效的毛玻璃开关：只有显式写成 false 才关闭。</summary>
+        public bool UseGlass
+        {
+            get { return Glass != false; }
+        }
+
+        /// <summary>实际生效的毛玻璃强度，夹到 0～2。</summary>
+        public int GlassStrengthValue
+        {
+            get
+            {
+                int value = GlassStrength ?? DefaultGlassStrength;
+                if (value < 0)
+                {
+                    return 0;
+                }
+                if (value > 2)
+                {
+                    return 2;
+                }
+                return value;
+            }
+        }
 
         public static AppConfig CreateDefault()
         {
@@ -71,6 +112,8 @@ namespace ModelExplorer
             config.BinaryStl = true;
             config.StlUnits = DefaultStlUnits;
             config.StlQuality = DefaultStlQuality;
+            config.Glass = true;
+            config.GlassStrength = DefaultGlassStrength;
             config.BambuPath = "";
             config.SolidWorksPath = "";
             return config;

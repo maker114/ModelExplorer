@@ -29,21 +29,194 @@ namespace ModelExplorer
         public Color Error { get; set; }
         public Color Code { get; set; }
 
-        public Brush BgBrush { get { return MakeBrush(Bg); } }
-        public Brush SidebarBrush { get { return MakeBrush(Sidebar); } }
-        public Brush PanelBrush { get { return MakeBrush(Panel); } }
-        public Brush PanelActiveBrush { get { return MakeBrush(PanelActive); } }
-        public Brush BorderBrush { get { return MakeBrush(Border); } }
-        public Brush TextBrush { get { return MakeBrush(Text); } }
-        public Brush MutedBrush { get { return MakeBrush(Muted); } }
-        public Brush AccentBrush { get { return MakeBrush(Accent); } }
-        public Brush AccentHoverBrush { get { return MakeBrush(AccentHover); } }
-        public Brush PartBrush { get { return MakeBrush(PartColor); } }
-        public Brush AssemblyBrush { get { return MakeBrush(AssemblyColor); } }
-        public Brush StlBrush { get { return MakeBrush(StlColor); } }
-        public Brush SuccessBrush { get { return MakeBrush(Success); } }
-        public Brush ErrorBrush { get { return MakeBrush(Error); } }
-        public Brush CodeBrush { get { return MakeBrush(Code); } }
+        // ---- 毛玻璃 ----
+        //
+        // 画刷按玻璃等级惰性重建：等级为 0 时返回与旧版逐像素一致的实色画刷，
+        // 因此「关闭毛玻璃」不需要任何额外分支，观感直接回到 v3.1.3。
+        private int _glassLevel;
+        private int _brushLevel = -1;
+        private Brush _bgBrush;
+        private Brush _windowBaseBrush;
+        private Brush _sidebarBrush;
+        private Brush _panelBrush;
+        private Brush _panelActiveBrush;
+        private Brush _popupBrush;
+        private Brush _borderBrush;
+        private Brush _textBrush;
+        private Brush _mutedBrush;
+        private Brush _accentBrush;
+        private Brush _accentHoverBrush;
+        private Brush _partBrush;
+        private Brush _assemblyBrush;
+        private Brush _stlBrush;
+        private Brush _successBrush;
+        private Brush _errorBrush;
+        private Brush _codeBrush;
+
+        /// <summary>玻璃等级：0 关闭，1 轻柔，2 标准，3 浓郁。由 <see cref="ThemeManager.ApplyGlass"/> 设置。</summary>
+        public int GlassLevel { get { return _glassLevel; } }
+
+        /// <summary>
+        /// 极光背景的三个光斑颜色。直接跟随主题里已有的强调色 / STL 色 / 装配体色，
+        /// 于是 5 套预设各有各的色相，不会全部糊成同一层灰。
+        /// </summary>
+        public Color AuroraPrimary { get { return Accent; } }
+        public Color AuroraSecondary { get { return StlColor; } }
+        public Color AuroraTertiary { get { return AssemblyColor; } }
+
+        public Brush BgBrush { get { EnsureBrushes(); return _bgBrush; } }
+        public Brush SidebarBrush { get { EnsureBrushes(); return _sidebarBrush; } }
+        public Brush PanelBrush { get { EnsureBrushes(); return _panelBrush; } }
+        public Brush PanelActiveBrush { get { EnsureBrushes(); return _panelActiveBrush; } }
+        public Brush PopupBrush { get { EnsureBrushes(); return _popupBrush; } }
+        public Brush BorderBrush { get { EnsureBrushes(); return _borderBrush; } }
+        public Brush TextBrush { get { EnsureBrushes(); return _textBrush; } }
+        public Brush MutedBrush { get { EnsureBrushes(); return _mutedBrush; } }
+        public Brush AccentBrush { get { EnsureBrushes(); return _accentBrush; } }
+        public Brush AccentHoverBrush { get { EnsureBrushes(); return _accentHoverBrush; } }
+        public Brush PartBrush { get { EnsureBrushes(); return _partBrush; } }
+        public Brush AssemblyBrush { get { EnsureBrushes(); return _assemblyBrush; } }
+        public Brush StlBrush { get { EnsureBrushes(); return _stlBrush; } }
+        public Brush SuccessBrush { get { EnsureBrushes(); return _successBrush; } }
+        public Brush ErrorBrush { get { EnsureBrushes(); return _errorBrush; } }
+        public Brush CodeBrush { get { EnsureBrushes(); return _codeBrush; } }
+
+        /// <summary>
+        /// 下拉弹窗底色。弹窗是独立的顶层窗口，背后就是主界面本身（不是极光层），
+        /// 半透明会直接透出下面的文字，因此这里始终接近不透明。
+        /// </summary>
+        public Color PopupColor
+        {
+            get { return _glassLevel <= 0 ? Panel : WithAlpha(Panel, 0.97); }
+        }
+
+        /// <summary>窗口底层的不透明底色。毛玻璃必须画在它之上：分层窗口一旦整体半透明，
+        /// 就会直接透出桌面或下层窗口，压在上面的文字必然不可读。</summary>
+        public Brush WindowBaseBrush { get { EnsureBrushes(); return _windowBaseBrush; } }
+
+        public void SetGlassLevel(int level)
+        {
+            if (level < 0)
+            {
+                level = 0;
+            }
+            if (level > 3)
+            {
+                level = 3;
+            }
+            if (level == _glassLevel && _brushLevel == _glassLevel)
+            {
+                return;
+            }
+            _glassLevel = level;
+            _brushLevel = -1;
+        }
+
+        private void EnsureBrushes()
+        {
+            if (_brushLevel == _glassLevel && _bgBrush != null)
+            {
+                return;
+            }
+
+            _bgBrush = MakeBrush(Bg);
+            _windowBaseBrush = MakeBrush(Sidebar);
+            _textBrush = MakeBrush(Text);
+            _mutedBrush = MakeBrush(Muted);
+            _accentBrush = MakeBrush(Accent);
+            _accentHoverBrush = MakeBrush(AccentHover);
+            _partBrush = MakeBrush(PartColor);
+            _assemblyBrush = MakeBrush(AssemblyColor);
+            _stlBrush = MakeBrush(StlColor);
+            _successBrush = MakeBrush(Success);
+            _errorBrush = MakeBrush(Error);
+            // 日志区要读长文本，始终不透明
+            _codeBrush = MakeBrush(Code);
+
+            if (_glassLevel <= 0)
+            {
+                _sidebarBrush = MakeBrush(Sidebar);
+                _panelBrush = MakeBrush(Panel);
+                _panelActiveBrush = MakeBrush(PanelActive);
+                _popupBrush = MakeBrush(Panel);
+                _borderBrush = MakeBrush(Border);
+            }
+            else
+            {
+                // 玻璃面板的填充色要比原色更亮一点：近黑底上「更暗的半透明」看起来和背景没区别，
+                // 略微向白靠才像一层浮起来的磨砂玻璃。
+                _sidebarBrush = MakeGlassBrush(Blend(Sidebar, Colors.White, 0.05), SidebarAlpha);
+                _panelBrush = MakeGlassBrush(Blend(Panel, Colors.White, 0.09), PanelAlpha);
+                // 悬停 / 选中态是压在玻璃面板上的小色块，用纯色半透明即可，不需要再做渐变
+                _panelActiveBrush = MakeBrush(WithAlpha(PanelActive, PanelActiveAlpha));
+                // 下拉弹窗是独立的顶层窗口，背后就是主界面本身，必须接近不透明才读得清
+                _popupBrush = MakeBrush(PopupColor);
+                _borderBrush = MakeBrush(WithAlpha(Blend(Border, Colors.White, 0.18), BorderAlpha));
+            }
+
+            _brushLevel = _glassLevel;
+        }
+
+        private double SidebarAlpha
+        {
+            get { return _glassLevel == 1 ? 0.86 : (_glassLevel == 2 ? 0.80 : 0.72); }
+        }
+
+        private double PanelAlpha
+        {
+            get { return _glassLevel == 1 ? 0.84 : (_glassLevel == 2 ? 0.74 : 0.62); }
+        }
+
+        private double PanelActiveAlpha
+        {
+            get { return _glassLevel == 1 ? 0.94 : (_glassLevel == 2 ? 0.90 : 0.84); }
+        }
+
+        private double BorderAlpha
+        {
+            get { return _glassLevel == 1 ? 0.80 : (_glassLevel == 2 ? 0.70 : 0.58); }
+        }
+
+        /// <summary>
+        /// 玻璃面板填充：整体半透明，顶边略提亮、底边略压暗，
+        /// 这点纵向明暗差就是「玻璃被上方光打亮」的关键线索，纯色半透明会显得脏。
+        /// </summary>
+        private static Brush MakeGlassBrush(Color color, double alpha)
+        {
+            Color top = WithAlpha(Blend(color, Colors.White, 0.07), ClampAlpha(alpha + 0.04));
+            Color bottom = WithAlpha(Blend(color, Colors.Black, 0.06), ClampAlpha(alpha - 0.04));
+            LinearGradientBrush brush = new LinearGradientBrush(top, bottom, new Point(0.5, 0), new Point(0.5, 1));
+            brush.Freeze();
+            return brush;
+        }
+
+        private static double ClampAlpha(double alpha)
+        {
+            if (alpha < 0)
+            {
+                return 0;
+            }
+            if (alpha > 1)
+            {
+                return 1;
+            }
+            return alpha;
+        }
+
+        public static Color WithAlpha(Color color, double alpha)
+        {
+            return Color.FromArgb((byte)Math.Round(ClampAlpha(alpha) * 255), color.R, color.G, color.B);
+        }
+
+        public static Color Blend(Color color, Color other, double amount)
+        {
+            double keep = 1 - amount;
+            return Color.FromArgb(
+                color.A,
+                (byte)Math.Round(color.R * keep + other.R * amount),
+                (byte)Math.Round(color.G * keep + other.G * amount),
+                (byte)Math.Round(color.B * keep + other.B * amount));
+        }
 
         public static Brush MakeBrush(Color color)
         {
@@ -182,7 +355,55 @@ namespace ModelExplorer
         public static void Apply(string name)
         {
             AppTheme theme = Presets.Find(t => t.Name == name);
+            // 只换配色时保留当前玻璃等级：主题与毛玻璃是两个独立的设置项
+            int level = Current == null ? 0 : Current.GlassLevel;
             Current = theme ?? Presets[0];
+            Current.SetGlassLevel(level);
+        }
+
+        /// <summary>
+        /// 按配置一次性应用配色与毛玻璃（GUI 启动、冒烟测试共用同一入口，
+        /// 避免出现「主题按配置、玻璃按默认」这种半生效状态）。
+        /// </summary>
+        public static void Apply(AppConfig config)
+        {
+            if (config == null)
+            {
+                Apply((string)null);
+                ApplyGlass(false, 0);
+                return;
+            }
+
+            Apply(config.Theme);
+            ApplyGlass(config.UseGlass, config.GlassStrengthValue);
+        }
+
+        /// <summary>
+        /// 设置毛玻璃。强度用配置里的 0 / 1 / 2（轻柔 / 标准 / 浓郁），
+        /// 内部等级是 1 / 2 / 3，0 专表示关闭。
+        /// </summary>
+        public static void ApplyGlass(bool enabled, int strength)
+        {
+            if (Current == null)
+            {
+                return;
+            }
+
+            int level = 0;
+            if (enabled)
+            {
+                if (strength < 0)
+                {
+                    strength = 0;
+                }
+                if (strength > 2)
+                {
+                    strength = 2;
+                }
+                level = strength + 1;
+            }
+
+            Current.SetGlassLevel(level);
         }
     }
 
@@ -316,9 +537,11 @@ namespace ModelExplorer
                 ClipToBounds = true
             };
 
+            // WindowBaseBrush 而不是 SidebarBrush：对话框是独立的顶层窗口，
+            // 底层必须不透明，否则会把主界面透过对话框背景显示出来。
             Border background = new Border
             {
-                Background = theme.SidebarBrush,
+                Background = theme.WindowBaseBrush,
                 CornerRadius = new CornerRadius(14),
                 ClipToBounds = true
             };
@@ -337,6 +560,9 @@ namespace ModelExplorer
             shell.Children.Add(background);
             shell.Children.Add(line);
             shell.Children.Add(content);
+
+            // 六个对话框共用这里，毛玻璃只需接一次；关闭时该方法内部直接返回
+            Glass.Apply(shell, theme);
 
             return new Border
             {
@@ -388,6 +614,9 @@ namespace ModelExplorer
 
         public static ControlTemplate RoundedComboBoxTemplate()
         {
+            // 弹窗底色写死成字面量而不是模板绑定：ComboBox.Background 是半透明的玻璃画刷，
+            // 弹窗窗口背后没有极光层、只有主界面，沿用它会直接透出底下的文字。
+            string popup = HexA(ThemeManager.Current.PopupColor);
             string xaml =
                 "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +
                 " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='ComboBox'>" +
@@ -412,7 +641,7 @@ namespace ModelExplorer
                 "</ToggleButton.Template></ToggleButton>" +
                 "<Popup x:Name='PART_Popup' Placement='Bottom' AllowsTransparency='True' Focusable='False'" +
                 " IsOpen='{TemplateBinding IsDropDownOpen}' PopupAnimation='Slide'>" +
-                "<Border Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}'" +
+                "<Border Background='" + popup + "' BorderBrush='{TemplateBinding BorderBrush}'" +
                 " BorderThickness='0' CornerRadius='8' MinWidth='280'" +
                 " MaxHeight='{TemplateBinding MaxDropDownHeight}' Padding='4'>" +
                 "<ScrollViewer VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled' Background='Transparent'>" +
@@ -454,6 +683,12 @@ namespace ModelExplorer
         private static string Hex(Color color)
         {
             return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
+        }
+
+        /// <summary>带透明度的颜色字面量，供必须脱离动态资源解析的模板使用（如弹窗底色）。</summary>
+        private static string HexA(Color color)
+        {
+            return "#" + color.A.ToString("X2") + Hex(color).Substring(1);
         }
     }
 }

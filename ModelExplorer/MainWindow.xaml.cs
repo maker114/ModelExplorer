@@ -35,11 +35,12 @@ namespace ModelExplorer
             _visibleStls = new ObservableCollection<ModelFile>();
             _allModels = new List<ModelFile>();
             _config = ConfigService.Load();
-            ThemeManager.Apply(_config.Theme);
+            ThemeManager.Apply(_config);
             SolidWorksConverter.Log += Converter_Log;
 
             InitializeComponent();
             Icon = AppIcon.WindowIcon;
+            VersionText.Text = DisplayVersion();
             ApplyThemeResources();
             ApplyFontSettings();
             ApplyConfigToUi();
@@ -57,6 +58,22 @@ namespace ModelExplorer
         {
             StatusText.Text = text;
             UiAnimation.Flash(StatusText);
+        }
+
+        /// <summary>
+        /// 标题栏上的版本号，取程序集版本的前三段（3.2.0.0 → "V 3.2.0"）。
+        /// 版本号的单一真源是 ModelExplorer\AssemblyInfo.cs（publish.ps1 也从那里解析），
+        /// 这里读程序集而不是再手写一份，升版时就不会漏改标题栏。
+        /// </summary>
+        private static string DisplayVersion()
+        {
+            Version version = typeof(MainWindow).Assembly.GetName().Version;
+            if (version == null)
+            {
+                return "";
+            }
+
+            return string.Format("V {0}.{1}.{2}", version.Major, version.Minor, version.Build);
         }
 
         private void ApplyThemeResources()
@@ -84,6 +101,9 @@ namespace ModelExplorer
                 app.Resources["ScrollBarThumbHoverBrush"] = ThemeManager.Current.PanelActiveBrush;
                 app.Resources["ScrollBarThumbPressedBrush"] = ThemeManager.Current.AccentBrush;
             }
+
+            // 玻璃背景层要等主题画刷就位后再铺，且必须在设置窗口改完主题重建主窗口时重铺
+            Glass.Apply(ShellRoot, ThemeManager.Current);
         }
 
         private void ApplyFontSettings()

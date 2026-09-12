@@ -65,6 +65,9 @@ namespace ModelExplorer
                         config.StlQuality = string.IsNullOrEmpty(loaded.StlQuality) ? AppConfig.DefaultStlQuality : loaded.StlQuality;
                         config.BambuPath = loaded.BambuPath ?? "";
                         config.SolidWorksPath = loaded.SolidWorksPath ?? "";
+                        // 同样保持可空：字段缺失（旧版配置）时为 null，由 UseGlass / GlassStrengthValue 解释为默认值
+                        config.Glass = loaded.Glass;
+                        config.GlassStrength = loaded.GlassStrength;
                     }
                 }
             }

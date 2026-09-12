@@ -585,7 +585,10 @@
 
   <Border SnapsToDevicePixels="True"
           UseLayoutRounding="True">
-    <Grid ClipToBounds="True">
+    <!-- ShellRoot 的第一个子元素必须是窗口不透明底色：毛玻璃背景层会插在它之上
+         （见 Glass.Apply），最后那层描边留在最上面，窗口外框才不会被糊掉。 -->
+    <Grid x:Name="ShellRoot"
+          ClipToBounds="True">
       <Border Background="{DynamicResource BgBrush}"
               CornerRadius="14"
               ClipToBounds="True" />
@@ -616,7 +619,9 @@
                          FontSize="19"
                          FontWeight="Bold"
                          VerticalAlignment="Bottom" />
-              <TextBlock Text="V 3.1.3"
+              <!-- 版本号由 MainWindow 从程序集信息读取（源于 AssemblyInfo.cs），
+                   不再在这里手写一份，避免升版时两处不同步 -->
+              <TextBlock x:Name="VersionText"
                          Foreground="{DynamicResource AccentBrush}"
                          FontFamily="Microsoft YaHei UI"
                          FontSize="13"
@@ -1063,7 +1068,8 @@
         </Border>
       </Grid>
 
-      <Border Grid.Row="2" Background="#0D1017">
+      <!-- 状态栏原先写死 #0D1017，改成跟随主题的侧栏色，才能与其它玻璃面板一起半透明 -->
+      <Border Grid.Row="2" Background="{DynamicResource SidebarBrush}">
         <TextBlock x:Name="StatusText"
                    Text="就绪"
                    Foreground="{DynamicResource MutedBrush}"
