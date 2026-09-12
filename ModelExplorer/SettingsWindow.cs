@@ -19,6 +19,19 @@ namespace ModelExplorer
         /// <summary>毛玻璃强度档位，下标即 AppConfig.GlassStrength 的取值。</summary>
         private static readonly string[] GlassStrengthLabels = { "轻柔", "标准", "浓郁" };
 
+        /// <summary>
+        /// 背景图适配方式的显示标签与说明；token 顺序与 <see cref="AppConfig.BackgroundFitTokens"/> 一一对应，
+        /// token 本身只在 AppConfig 里维护一份。
+        /// </summary>
+        private static readonly string[] BackgroundFitLabels = { "覆盖", "填充", "居中", "拉伸" };
+        private static readonly string[] BackgroundFitHints =
+        {
+            "等比放大铺满窗口，超出部分裁掉，不留空。",
+            "等比缩放到完整可见，四周用极光底色补齐。",
+            "不缩放，原尺寸居中，四周用极光底色补齐。",
+            "非等比拉伸铺满窗口，比例可能与原图不同。"
+        };
+
         private readonly AppConfig _source;
         private TextBox _bambuPathBox;
         private TextBox _solidWorksPathBox;
@@ -30,6 +43,16 @@ namespace ModelExplorer
         private ToggleSwitch _organizeByFolderSwitch;
         private ToggleSwitch _glassSwitch;
         private ComboBox _glassStrengthCombo;
+        private string _backgroundImage;
+        private bool _backgroundSaved;
+        private TextBlock _backgroundPathText;
+        private TextBlock _backgroundFitHint;
+        private Button _backgroundClearButton;
+        private RadioButton[] _backgroundFitButtons;
+        private Slider _backgroundBlurSlider;
+        private Slider _backgroundDarkenSlider;
+        private TextBlock _backgroundBlurValue;
+        private TextBlock _backgroundDarkenValue;
         private ComboBox _stlUnitsCombo;
         private ComboBox _stlQualityCombo;
 
@@ -341,6 +364,8 @@ namespace ModelExplorer
             _glassSwitch.Checked += delegate { _glassStrengthCombo.IsEnabled = true; };
             _glassSwitch.Unchecked += delegate { _glassStrengthCombo.IsEnabled = false; };
 
+            BuildBackgroundSection(body, theme);
+
             body.Children.Add(SectionTitle("字体大小", 22));
             _fontSizeCombo = new ComboBox
             {
@@ -376,6 +401,307 @@ namespace ModelExplorer
             footer.Children.Add(saveButton);
             root.Children.Add(footer);
             Grid.SetRow(root.Children[root.Children.Count - 1], 2);
+        }
+
+        /// <summary>
+        /// 背景图分区。选图、适配、壁纸模糊、暗化都会**立刻预览**：直接改本窗口与主窗口已有的
+        /// 背景层（<see cref="Glass.Configure(BackdropSettings)"/> + <see cref="Glass.Invalidate"/>），
+        /// 但不写配置——点「保存」才落盘，取消或直接关窗会把预览还原（见 <see cref="OnClosed"/>）。
+        /// 这样调滑杆时看到的就是最终效果，不必保存一次、重启一次。
+        /// </summary>
+        private void BuildBackgroundSection(StackPanel body, AppTheme theme)
+        {
+            body.Children.Add(SectionTitle("背景图", 22));
+
+            _backgroundImage = _source.BackgroundImage ?? "";
+
+            Grid pathRow = new Grid();
+            pathRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            pathRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            _backgroundPathText = new TextBlock
+            {
+                Foreground = theme.TextBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 12,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            pathRow.Children.Add(new Border
+            {
+                Background = theme.PanelBrush,
+                BorderBrush = theme.BorderBrush,
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(10, 8, 10, 8),
+                Child = _backgroundPathText
+            });
+
+            Button browse = MakeButton("选择图片…", BrowseBackground_Click, false, ActionColumnWidth, 34);
+            browse.Margin = new Thickness(8, 0, 0, 0);
+            Grid.SetColumn(browse, 1);
+            pathRow.Children.Add(browse);
+            body.Children.Add(pathRow);
+
+            _backgroundClearButton = MakeButton("清除背景图", ClearBackground_Click, false, 110, 30);
+            _backgroundClearButton.HorizontalAlignment = HorizontalAlignment.Left;
+            _backgroundClearButton.Margin = new Thickness(0, 8, 0, 0);
+            body.Children.Add(_backgroundClearButton);
+
+            body.Children.Add(new TextBlock
+            {
+                Text = "适配",
+                Foreground = theme.TextBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 13,
+                Margin = new Thickness(0, 16, 0, 8)
+            });
+
+            Grid fitRow = new Grid();
+            _backgroundFitButtons = new RadioButton[AppConfig.BackgroundFitTokens.Length];
+            for (int i = 0; i < AppConfig.BackgroundFitTokens.Length; i++)
+            {
+                bool first = i == 0;
+                bool last = i == AppConfig.BackgroundFitTokens.Length - 1;
+                RadioButton segment = new RadioButton
+                {
+                    Content = BackgroundFitLabels[i],
+                    GroupName = "BackdropFit",
+                    Foreground = theme.MutedBrush,
+                    FontFamily = new FontFamily("Microsoft YaHei UI"),
+                    FontSize = 13,
+                    Cursor = Cursors.Hand,
+                    Margin = new Thickness(first ? 0 : 5, 0, last ? 0 : 5, 0),
+                    Template = UiFactory.SegmentTemplate()
+                };
+                segment.Checked += BackgroundFit_Checked;
+                fitRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                Grid.SetColumn(segment, i);
+                fitRow.Children.Add(segment);
+                _backgroundFitButtons[i] = segment;
+            }
+
+            body.Children.Add(fitRow);
+
+            _backgroundFitHint = HintText("", theme, 6, 0);
+            body.Children.Add(_backgroundFitHint);
+
+            _backgroundBlurSlider = MakeSlider(0, AppConfig.MaxBackgroundBlur);
+            _backgroundBlurValue = MakeValueLabel(theme);
+            _backgroundBlurSlider.ValueChanged += delegate
+            {
+                _backgroundBlurValue.Text = ((int)Math.Round(_backgroundBlurSlider.Value)) + " px";
+                PreviewBackground();
+            };
+            body.Children.Add(MakeSliderRow("壁纸模糊", _backgroundBlurSlider, _backgroundBlurValue, theme, 14));
+            body.Children.Add(HintText(
+                "0 = 不模糊。未设置背景图时这一项不生效（极光仍按玻璃档位自动模糊）。",
+                theme, 6, 0));
+
+            _backgroundDarkenSlider = MakeSlider(0, AppConfig.MaxBackgroundDarken);
+            _backgroundDarkenValue = MakeValueLabel(theme);
+            _backgroundDarkenSlider.ValueChanged += delegate
+            {
+                _backgroundDarkenValue.Text = ((int)Math.Round(_backgroundDarkenSlider.Value)) + " %";
+                PreviewBackground();
+            };
+            body.Children.Add(MakeSliderRow("暗化", _backgroundDarkenSlider, _backgroundDarkenValue, theme, 14));
+            body.Children.Add(HintText(
+                "压暗背景以保证面板上的小字仍看得清。设得比可读性下限更暗时以你的设置为准；" +
+                "更亮时自动补足到下限。",
+                theme, 6, 0));
+
+            RefreshBackgroundUi(theme, true);
+        }
+
+        /// <summary>把配置里的背景图设置灌进控件（首次或清除后调用）。</summary>
+        private void RefreshBackgroundUi(AppTheme theme, bool loadFromConfig)
+        {
+            if (loadFromConfig)
+            {
+                _backgroundBlurSlider.Value = _source.BackgroundBlurValue;
+                _backgroundDarkenSlider.Value = _source.BackgroundDarkenValue;
+
+                int index = Array.IndexOf(AppConfig.BackgroundFitTokens, _source.BackgroundFitValue);
+                if (index < 0)
+                {
+                    index = 0;
+                }
+                _backgroundFitButtons[index].IsChecked = true;
+                _backgroundFitHint.Text = BackgroundFitHints[index];
+            }
+
+            _backgroundBlurValue.Text = ((int)Math.Round(_backgroundBlurSlider.Value)) + " px";
+            _backgroundDarkenValue.Text = ((int)Math.Round(_backgroundDarkenSlider.Value)) + " %";
+            _backgroundClearButton.IsEnabled = !string.IsNullOrEmpty(_backgroundImage);
+            UpdateBackgroundPathText(theme);
+        }
+
+        private void UpdateBackgroundPathText(AppTheme theme)
+        {
+            if (string.IsNullOrEmpty(_backgroundImage))
+            {
+                _backgroundPathText.Text = "未设置（只用极光背景）";
+                _backgroundPathText.Foreground = theme.MutedBrush;
+                return;
+            }
+
+            _backgroundPathText.Text = System.IO.File.Exists(_backgroundImage)
+                ? _backgroundImage
+                : _backgroundImage + "　（文件不存在，已忽略）";
+            _backgroundPathText.Foreground = System.IO.File.Exists(_backgroundImage)
+                ? theme.TextBrush
+                : theme.ErrorBrush;
+        }
+
+        private void BrowseBackground_Click(object sender, RoutedEventArgs e)
+        {
+            using (System.Windows.Forms.OpenFileDialog dialog = new System.Windows.Forms.OpenFileDialog())
+            {
+                dialog.Title = "选择背景图片";
+                dialog.Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp|所有文件|*.*";
+                dialog.CheckFileExists = true;
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+                {
+                    return;
+                }
+
+                bool firstImage = string.IsNullOrEmpty(_backgroundImage);
+                _backgroundImage = dialog.FileName;
+
+                // 旧配置里这两个字段是 0（不模糊、不暗化）。第一次选图时如果用户还没调过，
+                // 直接给默认值，否则会得到一张又sharp又亮的壁纸，文字立刻难读。
+                if (firstImage)
+                {
+                    if (_backgroundBlurSlider.Value <= 0)
+                    {
+                        _backgroundBlurSlider.Value = AppConfig.DefaultBackgroundBlur;
+                    }
+                    if (_backgroundDarkenSlider.Value <= 0)
+                    {
+                        _backgroundDarkenSlider.Value = AppConfig.DefaultBackgroundDarken;
+                    }
+                }
+
+                AppTheme theme = ThemeManager.Current;
+                _backgroundClearButton.IsEnabled = true;
+                UpdateBackgroundPathText(theme);
+                PreviewBackground();
+            }
+        }
+
+        private void ClearBackground_Click(object sender, RoutedEventArgs e)
+        {
+            _backgroundImage = "";
+            _backgroundClearButton.IsEnabled = false;
+            UpdateBackgroundPathText(ThemeManager.Current);
+            PreviewBackground();
+        }
+
+        private void BackgroundFit_Checked(object sender, RoutedEventArgs e)
+        {
+            int index = Array.IndexOf(_backgroundFitButtons, sender as RadioButton);
+            if (index >= 0)
+            {
+                _backgroundFitHint.Text = BackgroundFitHints[index];
+            }
+            PreviewBackground();
+        }
+
+        private int SelectedFitIndex()
+        {
+            for (int i = 0; i < _backgroundFitButtons.Length; i++)
+            {
+                if (_backgroundFitButtons[i].IsChecked == true)
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>把当前控件状态交给 Glass 立刻重画背景（不写配置）。</summary>
+        private void PreviewBackground()
+        {
+            if (_backgroundBlurSlider == null)
+            {
+                return;
+            }
+
+            BackdropSettings preview = new BackdropSettings
+            {
+                ImagePath = string.IsNullOrEmpty(_backgroundImage) ? null : _backgroundImage,
+                Fit = BackdropSettings.ParseFit(AppConfig.BackgroundFitTokens[SelectedFitIndex()]),
+                Blur = (int)Math.Round(_backgroundBlurSlider.Value),
+                Darken = (int)Math.Round(_backgroundDarkenSlider.Value)
+            };
+            Glass.Configure(preview);
+            Glass.Invalidate();
+        }
+
+        /// <summary>取消或直接关窗时把预览还原成保存前的配置，避免界面与 config.json 不一致。</summary>
+        protected override void OnClosed(EventArgs e)
+        {
+            base.OnClosed(e);
+            if (!_backgroundSaved)
+            {
+                Glass.Configure(_source);
+                Glass.Invalidate();
+            }
+        }
+
+        private static Slider MakeSlider(double minimum, double maximum)
+        {
+            Slider slider = new Slider
+            {
+                Minimum = minimum,
+                Maximum = maximum,
+                IsMoveToPointEnabled = true,
+                IsSnapToTickEnabled = true,
+                TickFrequency = 1,
+                Height = 22,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(10, 0, 10, 0),
+                Template = UiFactory.SliderTemplate()
+            };
+            return slider;
+        }
+
+        private static TextBlock MakeValueLabel(AppTheme theme)
+        {
+            return new TextBlock
+            {
+                Foreground = theme.TextBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 12,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+        }
+
+        /// <summary>「标签 + 滑杆 + 数值」一行，与参考的滑杆行布局一致。</summary>
+        private static Grid MakeSliderRow(string label, Slider slider, TextBlock value, AppTheme theme, double topMargin)
+        {
+            Grid row = new Grid { Margin = new Thickness(0, topMargin, 0, 0) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(88) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(58) });
+
+            TextBlock text = new TextBlock
+            {
+                Text = label,
+                Foreground = theme.TextBrush,
+                FontFamily = new FontFamily("Microsoft YaHei UI"),
+                FontSize = 13,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            Grid.SetColumn(text, 0);
+            row.Children.Add(text);
+            Grid.SetColumn(slider, 1);
+            row.Children.Add(slider);
+            Grid.SetColumn(value, 2);
+            row.Children.Add(value);
+            return row;
         }
 
         private void Browse_Click(object sender, RoutedEventArgs e)
@@ -458,8 +784,14 @@ namespace ModelExplorer
                 GlassStrength = _glassStrengthCombo.SelectedIndex < 0
                     ? AppConfig.DefaultGlassStrength
                     : _glassStrengthCombo.SelectedIndex,
+                BackgroundImage = _backgroundImage ?? "",
+                BackgroundFit = AppConfig.BackgroundFitTokens[SelectedFitIndex()],
+                BackgroundBlur = (int)Math.Round(_backgroundBlurSlider.Value),
+                BackgroundDarken = (int)Math.Round(_backgroundDarkenSlider.Value),
                 ProjectNameUnchecked = _source.ProjectNameUnchecked ?? new System.Collections.Generic.List<string>()
             };
+            // 保存后主窗口会用新配置重建，这里不要再把预览还原回去
+            _backgroundSaved = true;
             DialogResult = true;
         }
 

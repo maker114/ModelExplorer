@@ -680,6 +680,77 @@ namespace ModelExplorer
             return (ControlTemplate)XamlReader.Parse(xaml);
         }
 
+        /// <summary>
+        /// 滑杆模板（设置窗口的背景图分区用）。
+        /// 轨道用滑杆两侧的 RepeatButton 分别画「已填充」和「未填充」两段，
+        /// 滑块是强调色圆点加一个深色芯，和拨钮开关的观感保持一致。
+        /// </summary>
+        public static ControlTemplate SliderTemplate()
+        {
+            string accent = Hex(ThemeManager.Current.Accent);
+            string groove = Hex(ThemeManager.Current.PanelActive);
+            string core = Hex(ThemeManager.Current.Code);
+            string xaml =
+                "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +
+                " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='Slider'>" +
+                "<Grid Height='22' VerticalAlignment='Center'>" +
+                "<Border Height='4' CornerRadius='2' Background='" + groove + "' VerticalAlignment='Center'/>" +
+                "<Track x:Name='PART_Track'>" +
+                "<Track.DecreaseRepeatButton>" +
+                "<RepeatButton Command='Slider.DecreaseLarge' Focusable='False' IsTabStop='False'>" +
+                "<RepeatButton.Template><ControlTemplate TargetType='RepeatButton'>" +
+                "<Border Height='4' CornerRadius='2' Background='" + accent + "' VerticalAlignment='Center'/>" +
+                "</ControlTemplate></RepeatButton.Template></RepeatButton>" +
+                "</Track.DecreaseRepeatButton>" +
+                "<Track.Thumb>" +
+                "<Thumb Width='16' Height='16' Focusable='False'>" +
+                "<Thumb.Template><ControlTemplate TargetType='Thumb'>" +
+                "<Grid>" +
+                "<Ellipse Width='16' Height='16' Fill='" + accent + "'/>" +
+                "<Ellipse Width='6' Height='6' Fill='" + core + "'/>" +
+                "</Grid>" +
+                "</ControlTemplate></Thumb.Template></Thumb>" +
+                "</Track.Thumb>" +
+                "<Track.IncreaseRepeatButton>" +
+                "<RepeatButton Command='Slider.IncreaseLarge' Focusable='False' IsTabStop='False'>" +
+                "<RepeatButton.Template><ControlTemplate TargetType='RepeatButton'>" +
+                "<Border Height='4' Background='Transparent' VerticalAlignment='Center'/>" +
+                "</ControlTemplate></RepeatButton.Template></RepeatButton>" +
+                "</Track.IncreaseRepeatButton>" +
+                "</Track></Grid></ControlTemplate>";
+            return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
+        /// <summary>
+        /// 分段选择按钮（背景图「适配」那一排）。用 RadioButton 拿到互斥语义，
+        /// 选中态填充强调色并把文字压成深色，未选中态是面板色 + 静音文字。
+        /// </summary>
+        public static ControlTemplate SegmentTemplate()
+        {
+            string accent = Hex(ThemeManager.Current.Accent);
+            string panel = Hex(ThemeManager.Current.PanelActive);
+            string border = Hex(ThemeManager.Current.Border);
+            string dark = "#151515";
+            string xaml =
+                "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +
+                " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='RadioButton'>" +
+                "<Border x:Name='bd' CornerRadius='8' Background='" + panel + "'" +
+                " BorderBrush='" + border + "' BorderThickness='1' Padding='0,7'>" +
+                "<ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>" +
+                "</Border>" +
+                "<ControlTemplate.Triggers>" +
+                "<Trigger Property='IsChecked' Value='True'>" +
+                "<Setter TargetName='bd' Property='Background' Value='" + accent + "'/>" +
+                "<Setter TargetName='bd' Property='BorderBrush' Value='" + accent + "'/>" +
+                "<Setter Property='Foreground' Value='" + dark + "'/>" +
+                "</Trigger>" +
+                "<Trigger Property='IsMouseOver' Value='True'>" +
+                "<Setter TargetName='bd' Property='BorderBrush' Value='" + accent + "'/>" +
+                "</Trigger>" +
+                "</ControlTemplate.Triggers></ControlTemplate>";
+            return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
         private static string Hex(Color color)
         {
             return "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");

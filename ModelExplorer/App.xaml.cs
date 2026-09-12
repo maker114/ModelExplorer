@@ -14,6 +14,7 @@ namespace ModelExplorer
                 // 冒烟也按真实配置应用主题与毛玻璃，否则测不到用户实际会看到的界面
                 AppConfig smokeConfig = ConfigService.Load();
                 ThemeManager.Apply(smokeConfig);
+                Glass.Configure(smokeConfig);
                 SettingsWindow smoke = new SettingsWindow(smokeConfig);
                 smoke.Close();
                 Shutdown();

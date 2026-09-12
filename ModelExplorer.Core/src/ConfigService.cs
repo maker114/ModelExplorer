@@ -68,6 +68,14 @@ namespace ModelExplorer
                         // 同样保持可空：字段缺失（旧版配置）时为 null，由 UseGlass / GlassStrengthValue 解释为默认值
                         config.Glass = loaded.Glass;
                         config.GlassStrength = loaded.GlassStrength;
+                        config.BackgroundImage = loaded.BackgroundImage ?? "";
+                        config.BackgroundFit = string.IsNullOrEmpty(loaded.BackgroundFit)
+                            ? AppConfig.DefaultBackgroundFit
+                            : loaded.BackgroundFit;
+                        // 缺字段时得到 0（不模糊 / 不暗化）：没设背景图时它们不参与渲染，
+                        // 设了图之后设置窗口会把 0 视为「还没调过」并给出默认值
+                        config.BackgroundBlur = loaded.BackgroundBlur;
+                        config.BackgroundDarken = loaded.BackgroundDarken;
                     }
                 }
             }

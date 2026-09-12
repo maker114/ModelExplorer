@@ -340,6 +340,33 @@ namespace ModelExplorer.Tests
             CheckEqual("越界强度夹到浓郁档", 2, strengthHigh.GlassStrengthValue);
             AppConfig strengthNegative = serializer.Deserialize<AppConfig>("{\"GlassStrength\":-3}");
             CheckEqual("负数强度夹到轻柔档", 0, strengthNegative.GlassStrengthValue);
+
+            // V3.3.0：背景图四项。旧配置没有这些字段，而缺字段必须落回「不设背景图」，
+            // 不能变成一张既不模糊也不暗化的亮壁纸（那会直接把面板上的小字压没）。
+            CheckEqual("旧配置没有背景图", "", legacy.BackgroundImage ?? "");
+            CheckEqual("旧配置的适配方式回退到覆盖", "cover", legacy.BackgroundFitValue);
+            CheckEqual("旧配置的壁纸模糊为 0", 0, legacy.BackgroundBlurValue);
+            CheckEqual("旧配置的暗化为 0", 0, legacy.BackgroundDarkenValue);
+
+            CheckEqual("默认配置不带背景图", "", defaults.BackgroundImage ?? "");
+            CheckEqual("默认适配方式为覆盖", "cover", defaults.BackgroundFitValue);
+            CheckEqual("默认壁纸模糊", AppConfig.DefaultBackgroundBlur, defaults.BackgroundBlurValue);
+            CheckEqual("默认暗化", AppConfig.DefaultBackgroundDarken, defaults.BackgroundDarkenValue);
+
+            AppConfig fitUpper = serializer.Deserialize<AppConfig>("{\"BackgroundFit\":\"STRETCH\"}");
+            CheckEqual("适配方式大小写不敏感", "stretch", fitUpper.BackgroundFitValue);
+            AppConfig fitUnknown = serializer.Deserialize<AppConfig>("{\"BackgroundFit\":\"tile\"}");
+            CheckEqual("非法适配方式回退到覆盖", "cover", fitUnknown.BackgroundFitValue);
+            CheckEqual("适配方式 token 表长度", 4, AppConfig.BackgroundFitTokens.Length);
+
+            AppConfig backgroundClamp = serializer.Deserialize<AppConfig>(
+                "{\"BackgroundBlur\":999,\"BackgroundDarken\":-20}");
+            CheckEqual("壁纸模糊超上限被夹住", AppConfig.MaxBackgroundBlur, backgroundClamp.BackgroundBlurValue);
+            CheckEqual("暗化负数被夹住", 0, backgroundClamp.BackgroundDarkenValue);
+
+            AppConfig backgroundRoundTrip = serializer.Deserialize<AppConfig>(serializer.Serialize(defaults));
+            CheckEqual("背景图设置可持久化", AppConfig.DefaultBackgroundBlur, backgroundRoundTrip.BackgroundBlurValue);
+            CheckEqual("背景图适配方式可持久化", "cover", backgroundRoundTrip.BackgroundFitValue);
         }
 
         // ---------------------------------------------------------------- 详细统计汇总

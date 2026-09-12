@@ -65,6 +65,19 @@ namespace ModelExplorer
         /// </summary>
         public int? GlassStrength { get; set; }
 
+        // ---- 背景图 ----
+        /// <summary>自定义背景图路径，空 = 只用极光背景。六个窗口共用同一张图。</summary>
+        public string BackgroundImage { get; set; }
+
+        /// <summary>背景图适配方式：cover / fill / center / stretch，见 <see cref="BackgroundFitValue"/>。</summary>
+        public string BackgroundFit { get; set; }
+
+        /// <summary>壁纸模糊（像素，0～40）：只在设置了背景图时生效。</summary>
+        public int BackgroundBlur { get; set; }
+
+        /// <summary>暗化百分比（0～90）：压住背景亮度，保证面板上的小字仍可读。</summary>
+        public int BackgroundDarken { get; set; }
+
         // ---- 外部程序路径 ----
         public string BambuPath { get; set; }
         public string SolidWorksPath { get; set; }
@@ -74,6 +87,17 @@ namespace ModelExplorer
         public const string DefaultStlUnits = "mm";
         public const string DefaultStlQuality = "Fine";
         public const int DefaultGlassStrength = 1;
+        public const string DefaultBackgroundFit = "cover";
+        public const int DefaultBackgroundBlur = 8;
+        public const int DefaultBackgroundDarken = 50;
+        public const int MaxBackgroundBlur = 40;
+        public const int MaxBackgroundDarken = 90;
+
+        /// <summary>
+        /// 适配方式的合法取值，是这一组 token 的**唯一真源**：设置窗口的分段按钮按同一顺序排布，
+        /// 校验也走这里，避免界面与校验各写一份而漂移。
+        /// </summary>
+        public static readonly string[] BackgroundFitTokens = { "cover", "fill", "center", "stretch" };
 
         /// <summary>实际生效的毛玻璃开关：只有显式写成 false 才关闭。</summary>
         public bool UseGlass
@@ -99,6 +123,51 @@ namespace ModelExplorer
             }
         }
 
+        /// <summary>实际生效的背景图适配方式；非法值一律回退到 cover。</summary>
+        public string BackgroundFitValue
+        {
+            get
+            {
+                string fit = (BackgroundFit ?? "").Trim().ToLowerInvariant();
+                for (int i = 0; i < BackgroundFitTokens.Length; i++)
+                {
+                    if (BackgroundFitTokens[i] == fit)
+                    {
+                        return fit;
+                    }
+                }
+                return DefaultBackgroundFit;
+            }
+        }
+
+        /// <summary>
+        /// 实际生效的壁纸模糊。旧配置没有这个字段，反序列化得到 0 —— 此时等于「不模糊」，
+        /// 而没设背景图时该值根本不参与渲染（极光沿用按玻璃档位推出的模糊），所以无需可空。
+        /// </summary>
+        public int BackgroundBlurValue
+        {
+            get { return ClampInt(BackgroundBlur, 0, MaxBackgroundBlur); }
+        }
+
+        /// <summary>实际生效的暗化百分比。渲染时还会叠加一个可读性下限，见 Backdrop。</summary>
+        public int BackgroundDarkenValue
+        {
+            get { return ClampInt(BackgroundDarken, 0, MaxBackgroundDarken); }
+        }
+
+        private static int ClampInt(int value, int min, int max)
+        {
+            if (value < min)
+            {
+                return min;
+            }
+            if (value > max)
+            {
+                return max;
+            }
+            return value;
+        }
+
         public static AppConfig CreateDefault()
         {
             AppConfig config = new AppConfig();
@@ -114,6 +183,10 @@ namespace ModelExplorer
             config.StlQuality = DefaultStlQuality;
             config.Glass = true;
             config.GlassStrength = DefaultGlassStrength;
+            config.BackgroundImage = "";
+            config.BackgroundFit = DefaultBackgroundFit;
+            config.BackgroundBlur = DefaultBackgroundBlur;
+            config.BackgroundDarken = DefaultBackgroundDarken;
             config.BambuPath = "";
             config.SolidWorksPath = "";
             return config;

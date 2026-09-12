@@ -36,6 +36,7 @@ namespace ModelExplorer
             _allModels = new List<ModelFile>();
             _config = ConfigService.Load();
             ThemeManager.Apply(_config);
+            Glass.Configure(_config);
             SolidWorksConverter.Log += Converter_Log;
 
             InitializeComponent();
@@ -46,6 +47,7 @@ namespace ModelExplorer
             ApplyConfigToUi();
             ApplyFontScale((FrameworkElement)Content);
             UiAnimation.FadeInOnOpen(this);
+            Loaded += MainWindow_Loaded;
             Log("Model Explorer 已启动");
 
             if (!string.IsNullOrEmpty(_config.LastDir) && Directory.Exists(_config.LastDir))
@@ -58,6 +60,18 @@ namespace ModelExplorer
         {
             StatusText.Text = text;
             UiAnimation.Flash(StatusText);
+        }
+
+        /// <summary>
+        /// 首次布局后背景层已经烘焙过一轮，这里把失败原因（例如背景图被删掉）写进日志。
+        /// 背景层本身不会因此中断：失败时退化成只有极光。
+        /// </summary>
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (Backdrop.LastError != null)
+            {
+                Log(Backdrop.LastError);
+            }
         }
 
         /// <summary>
