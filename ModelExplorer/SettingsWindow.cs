@@ -16,9 +16,6 @@ namespace ModelExplorer
         /// </summary>
         private const double ActionColumnWidth = 88;
 
-        /// <summary>毛玻璃强度档位，下标即 AppConfig.GlassStrength 的取值。</summary>
-        private static readonly string[] GlassStrengthLabels = { "轻柔", "标准", "浓郁" };
-
         /// <summary>
         /// 背景图适配方式的显示标签与说明；token 顺序与 <see cref="AppConfig.BackgroundFitTokens"/> 一一对应，
         /// token 本身只在 AppConfig 里维护一份。
@@ -42,16 +39,18 @@ namespace ModelExplorer
         private ToggleSwitch _openBambuSwitch;
         private ToggleSwitch _organizeByFolderSwitch;
         private ToggleSwitch _glassSwitch;
-        private ComboBox _glassStrengthCombo;
+        private Slider _glassBlurSlider;
+        private Slider _glassOpacitySlider;
+        private TextBlock _glassBlurValue;
+        private TextBlock _glassOpacityValue;
+        private bool _uiReady;
         private string _backgroundImage;
         private bool _backgroundSaved;
         private TextBlock _backgroundPathText;
         private TextBlock _backgroundFitHint;
         private Button _backgroundClearButton;
         private RadioButton[] _backgroundFitButtons;
-        private Slider _backgroundBlurSlider;
         private Slider _backgroundDarkenSlider;
-        private TextBlock _backgroundBlurValue;
         private TextBlock _backgroundDarkenValue;
         private ComboBox _stlUnitsCombo;
         private ComboBox _stlQualityCombo;
@@ -346,23 +345,38 @@ namespace ModelExplorer
                 "半透明玻璃面板 + 极光背景。关闭后回到纯色界面，低配机器或远程桌面下可关掉。",
                 theme, 2, 12));
 
-            _glassStrengthCombo = CreateCombo(theme);
-            _glassStrengthCombo.Margin = new Thickness(0, 8, 0, 0);
-            foreach (string label in GlassStrengthLabels)
+            _glassBlurSlider = MakeSlider(0, AppConfig.MaxGlassBlur);
+            _glassBlurSlider.Value = _source.GlassBlurValue;
+            _glassBlurValue = MakeValueLabel(theme);
+            _glassBlurSlider.ValueChanged += delegate
             {
-                _glassStrengthCombo.Items.Add(label);
-            }
-            _glassStrengthCombo.SelectedIndex = _source.GlassStrengthValue;
-            StyleComboBox(_glassStrengthCombo, theme);
-            body.Children.Add(_glassStrengthCombo);
+                _glassBlurValue.Text = ((int)Math.Round(_glassBlurSlider.Value)) + " px";
+                PreviewGlass();
+            };
+            body.Children.Add(MakeSliderRow("模糊", _glassBlurSlider, _glassBlurValue, theme, 6));
             body.Children.Add(HintText(
-                "档位越高，面板越透、背景模糊与光斑越明显。",
-                theme, 6, 0));
+                "作用在整层背景上：极光与自定义背景图一起变糊。0 = 不模糊。",
+                theme, 6, 12));
 
-            // 关掉毛玻璃时强度无意义，直接置灰，避免出现「改了却看不出效果」的设置
-            _glassStrengthCombo.IsEnabled = _source.UseGlass;
-            _glassSwitch.Checked += delegate { _glassStrengthCombo.IsEnabled = true; };
-            _glassSwitch.Unchecked += delegate { _glassStrengthCombo.IsEnabled = false; };
+            _glassOpacitySlider = MakeSlider(0, 100);
+            _glassOpacitySlider.Value = _source.GlassOpacityValue;
+            _glassOpacityValue = MakeValueLabel(theme);
+            _glassOpacitySlider.ValueChanged += delegate
+            {
+                _glassOpacityValue.Text = ((int)Math.Round(_glassOpacitySlider.Value)) + " %";
+                PreviewGlass();
+            };
+            body.Children.Add(MakeSliderRow("透明度", _glassOpacitySlider, _glassOpacityValue, theme, 6));
+            body.Children.Add(HintText(
+                "越大面板越透、越能看见背景；0 = 面板不透明，背景被完全挡住。",
+                theme, 6, 0));
+            _glassBlurValue.Text = ((int)Math.Round(_glassBlurSlider.Value)) + " px";
+            _glassOpacityValue.Text = ((int)Math.Round(_glassOpacitySlider.Value)) + " %";
+
+            // 关掉毛玻璃时这两个滑杆无意义，直接置灰，避免出现「改了却看不出效果」的设置
+            SetGlassControlsEnabled(_source.UseGlass);
+            _glassSwitch.Checked += delegate { SetGlassControlsEnabled(true); };
+            _glassSwitch.Unchecked += delegate { SetGlassControlsEnabled(false); };
 
             BuildBackgroundSection(body, theme);
 
@@ -401,6 +415,10 @@ namespace ModelExplorer
             footer.Children.Add(saveButton);
             root.Children.Add(footer);
             Grid.SetRow(root.Children[root.Children.Count - 1], 2);
+
+            // 控件都建完了才允许「实时预览」：滑杆初始化时会触发 ValueChanged，
+            // 那时背景图分区的控件还不存在
+            _uiReady = true;
         }
 
         /// <summary>
@@ -441,6 +459,9 @@ namespace ModelExplorer
             browse.Margin = new Thickness(8, 0, 0, 0);
             Grid.SetColumn(browse, 1);
             pathRow.Children.Add(browse);
+            // 与其它分区一致地留出 8px：否则分区标题下的分割线会贴到输入框上边框上，
+            // 看起来像一条加粗的错位分割线
+            pathRow.Margin = new Thickness(0, 8, 0, 0);
             body.Children.Add(pathRow);
 
             _backgroundClearButton = MakeButton("清除背景图", ClearBackground_Click, false, 110, 30);
@@ -467,7 +488,8 @@ namespace ModelExplorer
                 {
                     Content = BackgroundFitLabels[i],
                     GroupName = "BackdropFit",
-                    Foreground = theme.MutedBrush,
+                    // 未选中态用常规文字色而不是静音色：分段按钮上的字要一眼能读
+                    Foreground = theme.TextBrush,
                     FontFamily = new FontFamily("Microsoft YaHei UI"),
                     FontSize = 13,
                     Cursor = Cursors.Hand,
@@ -483,33 +505,23 @@ namespace ModelExplorer
 
             body.Children.Add(fitRow);
 
-            _backgroundFitHint = HintText("", theme, 6, 0);
+            _backgroundFitHint = HintText("", theme, 6, 14);
             body.Children.Add(_backgroundFitHint);
 
-            _backgroundBlurSlider = MakeSlider(0, AppConfig.MaxBackgroundBlur);
-            _backgroundBlurValue = MakeValueLabel(theme);
-            _backgroundBlurSlider.ValueChanged += delegate
-            {
-                _backgroundBlurValue.Text = ((int)Math.Round(_backgroundBlurSlider.Value)) + " px";
-                PreviewBackground();
-            };
-            body.Children.Add(MakeSliderRow("壁纸模糊", _backgroundBlurSlider, _backgroundBlurValue, theme, 14));
-            body.Children.Add(HintText(
-                "0 = 不模糊。未设置背景图时这一项不生效（极光仍按玻璃档位自动模糊）。",
-                theme, 6, 0));
-
             _backgroundDarkenSlider = MakeSlider(0, AppConfig.MaxBackgroundDarken);
+            _backgroundDarkenSlider.Value = _source.BackgroundDarkenValue;
             _backgroundDarkenValue = MakeValueLabel(theme);
             _backgroundDarkenSlider.ValueChanged += delegate
             {
                 _backgroundDarkenValue.Text = ((int)Math.Round(_backgroundDarkenSlider.Value)) + " %";
                 PreviewBackground();
             };
-            body.Children.Add(MakeSliderRow("暗化", _backgroundDarkenSlider, _backgroundDarkenValue, theme, 14));
+            body.Children.Add(MakeSliderRow("暗化", _backgroundDarkenSlider, _backgroundDarkenValue, theme, 6));
             body.Children.Add(HintText(
                 "压暗背景以保证面板上的小字仍看得清。设得比可读性下限更暗时以你的设置为准；" +
-                "更亮时自动补足到下限。",
+                "更亮时自动补足到下限。模糊在「毛玻璃」分区里调，两者共用同一个值。",
                 theme, 6, 0));
+            _backgroundDarkenValue.Text = ((int)Math.Round(_backgroundDarkenSlider.Value)) + " %";
 
             RefreshBackgroundUi(theme, true);
         }
@@ -519,9 +531,6 @@ namespace ModelExplorer
         {
             if (loadFromConfig)
             {
-                _backgroundBlurSlider.Value = _source.BackgroundBlurValue;
-                _backgroundDarkenSlider.Value = _source.BackgroundDarkenValue;
-
                 int index = Array.IndexOf(AppConfig.BackgroundFitTokens, _source.BackgroundFitValue);
                 if (index < 0)
                 {
@@ -531,7 +540,6 @@ namespace ModelExplorer
                 _backgroundFitHint.Text = BackgroundFitHints[index];
             }
 
-            _backgroundBlurValue.Text = ((int)Math.Round(_backgroundBlurSlider.Value)) + " px";
             _backgroundDarkenValue.Text = ((int)Math.Round(_backgroundDarkenSlider.Value)) + " %";
             _backgroundClearButton.IsEnabled = !string.IsNullOrEmpty(_backgroundImage);
             UpdateBackgroundPathText(theme);
@@ -566,21 +574,12 @@ namespace ModelExplorer
                     return;
                 }
 
-                bool firstImage = string.IsNullOrEmpty(_backgroundImage);
                 _backgroundImage = dialog.FileName;
 
-                // 旧配置里这两个字段是 0（不模糊、不暗化）。第一次选图时如果用户还没调过，
-                // 直接给默认值，否则会得到一张又sharp又亮的壁纸，文字立刻难读。
-                if (firstImage)
+                // 第一次选图时如果暗化还是 0，给个默认值：不然亮壁纸上的小字立刻难读
+                if (string.IsNullOrEmpty(_backgroundImage) == false && _backgroundDarkenSlider.Value <= 0)
                 {
-                    if (_backgroundBlurSlider.Value <= 0)
-                    {
-                        _backgroundBlurSlider.Value = AppConfig.DefaultBackgroundBlur;
-                    }
-                    if (_backgroundDarkenSlider.Value <= 0)
-                    {
-                        _backgroundDarkenSlider.Value = AppConfig.DefaultBackgroundDarken;
-                    }
+                    _backgroundDarkenSlider.Value = AppConfig.DefaultBackgroundDarken;
                 }
 
                 AppTheme theme = ThemeManager.Current;
@@ -620,23 +619,48 @@ namespace ModelExplorer
             return 0;
         }
 
-        /// <summary>把当前控件状态交给 Glass 立刻重画背景（不写配置）。</summary>
-        private void PreviewBackground()
+        /// <summary>毛玻璃两个滑杆的实时预览：改的是全局主题画刷与背景层，不写配置。</summary>
+        private void PreviewGlass()
         {
-            if (_backgroundBlurSlider == null)
+            if (!_uiReady)
             {
                 return;
             }
 
-            BackdropSettings preview = new BackdropSettings
+            ThemeManager.ApplyGlass(
+                _glassSwitch.IsChecked == true,
+                (int)Math.Round(_glassOpacitySlider.Value));
+            Glass.Configure(CurrentBackdropSettings());
+            Glass.Invalidate();
+        }
+
+        /// <summary>把当前控件状态交给 Glass 立刻重画背景（不写配置）。</summary>
+        private void PreviewBackground()
+        {
+            if (!_uiReady)
+            {
+                return;
+            }
+
+            Glass.Configure(CurrentBackdropSettings());
+            Glass.Invalidate();
+        }
+
+        private BackdropSettings CurrentBackdropSettings()
+        {
+            return new BackdropSettings
             {
                 ImagePath = string.IsNullOrEmpty(_backgroundImage) ? null : _backgroundImage,
                 Fit = BackdropSettings.ParseFit(AppConfig.BackgroundFitTokens[SelectedFitIndex()]),
-                Blur = (int)Math.Round(_backgroundBlurSlider.Value),
+                Blur = (int)Math.Round(_glassBlurSlider.Value),
                 Darken = (int)Math.Round(_backgroundDarkenSlider.Value)
             };
-            Glass.Configure(preview);
-            Glass.Invalidate();
+        }
+
+        private void SetGlassControlsEnabled(bool enabled)
+        {
+            _glassBlurSlider.IsEnabled = enabled;
+            _glassOpacitySlider.IsEnabled = enabled;
         }
 
         /// <summary>取消或直接关窗时把预览还原成保存前的配置，避免界面与 config.json 不一致。</summary>
@@ -645,6 +669,7 @@ namespace ModelExplorer
             base.OnClosed(e);
             if (!_backgroundSaved)
             {
+                ThemeManager.ApplyGlass(_source.UseGlass, _source.GlassOpacityValue);
                 Glass.Configure(_source);
                 Glass.Invalidate();
             }
@@ -749,14 +774,15 @@ namespace ModelExplorer
             combo.Padding = new Thickness(12, 6, 8, 6);
             combo.Template = UiFactory.RoundedComboBoxTemplate();
 
+            // 下拉选项用不透明面板色：弹窗是独立窗口，背后就是主界面，透出来只会更难读
             Style itemStyle = new Style(typeof(ComboBoxItem));
-            itemStyle.Setters.Add(new Setter(Control.BackgroundProperty, theme.PanelBrush));
+            itemStyle.Setters.Add(new Setter(Control.BackgroundProperty, theme.OpaquePanelBrush));
             itemStyle.Setters.Add(new Setter(Control.ForegroundProperty, theme.TextBrush));
             itemStyle.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(14, 6, 10, 6)));
             itemStyle.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Left));
 
             Trigger hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
-            hover.Setters.Add(new Setter(Control.BackgroundProperty, theme.PanelActiveBrush));
+            hover.Setters.Add(new Setter(Control.BackgroundProperty, theme.OpaquePanelActiveBrush));
             itemStyle.Triggers.Add(hover);
             combo.ItemContainerStyle = itemStyle;
         }
@@ -780,13 +806,11 @@ namespace ModelExplorer
                 Theme = (string)_themeCombo.SelectedItem,
                 FontSize = fontSize,
                 Glass = _glassSwitch.IsChecked == true,
-                // 下拉被清空时退回默认档，避免存出 -1 让 GlassStrengthValue 反复夹取
-                GlassStrength = _glassStrengthCombo.SelectedIndex < 0
-                    ? AppConfig.DefaultGlassStrength
-                    : _glassStrengthCombo.SelectedIndex,
+                // 3.4.0 起用滑杆：旧的三档强度不再写，读取时只作迁移用
+                GlassBlur = (int)Math.Round(_glassBlurSlider.Value),
+                GlassOpacity = (int)Math.Round(_glassOpacitySlider.Value),
                 BackgroundImage = _backgroundImage ?? "",
                 BackgroundFit = AppConfig.BackgroundFitTokens[SelectedFitIndex()],
-                BackgroundBlur = (int)Math.Round(_backgroundBlurSlider.Value),
                 BackgroundDarken = (int)Math.Round(_backgroundDarkenSlider.Value),
                 ProjectNameUnchecked = _source.ProjectNameUnchecked ?? new System.Collections.Generic.List<string>()
             };

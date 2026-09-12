@@ -367,6 +367,39 @@ namespace ModelExplorer.Tests
             AppConfig backgroundRoundTrip = serializer.Deserialize<AppConfig>(serializer.Serialize(defaults));
             CheckEqual("背景图设置可持久化", AppConfig.DefaultBackgroundBlur, backgroundRoundTrip.BackgroundBlurValue);
             CheckEqual("背景图适配方式可持久化", "cover", backgroundRoundTrip.BackgroundFitValue);
+
+            // V3.4.0：模糊 / 透明度两个滑杆取代三档强度，旧配置必须换算成同一观感
+            CheckEqual("旧配置缺新字段时按旧档位换算模糊", 40, legacy.GlassBlurValue);
+            CheckEqual("旧配置缺新字段时按旧档位换算透明度", 26, legacy.GlassOpacityValue);
+            CheckEqual("默认配置的毛玻璃模糊", AppConfig.DefaultGlassBlur, defaults.GlassBlurValue);
+            CheckEqual("默认配置的毛玻璃透明度", AppConfig.DefaultGlassOpacity, defaults.GlassOpacityValue);
+
+            AppConfig sliders = serializer.Deserialize<AppConfig>("{\"GlassBlur\":12,\"GlassOpacity\":55}");
+            CheckEqual("毛玻璃模糊可持久化", 12, sliders.GlassBlurValue);
+            CheckEqual("毛玻璃透明度可持久化", 55, sliders.GlassOpacityValue);
+
+            AppConfig sliderClamp = serializer.Deserialize<AppConfig>("{\"GlassBlur\":999,\"GlassOpacity\":-5}");
+            CheckEqual("模糊超上限被夹住", AppConfig.MaxGlassBlur, sliderClamp.GlassBlurValue);
+            CheckEqual("透明度负数被夹住", 0, sliderClamp.GlassOpacityValue);
+
+            AppConfig legacyLight = serializer.Deserialize<AppConfig>("{\"GlassStrength\":0}");
+            CheckEqual("旧轻柔档 → 模糊 26", 26, legacyLight.GlassBlurValue);
+            CheckEqual("旧轻柔档 → 透明度 14", 14, legacyLight.GlassOpacityValue);
+            AppConfig legacyHeavy = serializer.Deserialize<AppConfig>("{\"GlassStrength\":2}");
+            CheckEqual("旧浓郁档 → 模糊 56", 56, legacyHeavy.GlassBlurValue);
+            CheckEqual("旧浓郁档 → 透明度 38", 38, legacyHeavy.GlassOpacityValue);
+
+            AppConfig newerWins = serializer.Deserialize<AppConfig>(
+                "{\"GlassStrength\":2,\"GlassBlur\":8,\"GlassOpacity\":70}");
+            CheckEqual("新滑杆优先于旧档位（模糊）", 8, newerWins.GlassBlurValue);
+            CheckEqual("新滑杆优先于旧档位（透明度）", 70, newerWins.GlassOpacityValue);
+
+            // 3.3.0 写下的壁纸模糊在没有 GlassBlur 时继续生效，升级不会突然变糊或变锐
+            AppConfig fromWallpaper = serializer.Deserialize<AppConfig>(
+                "{\"BackgroundImage\":\"x.png\",\"BackgroundBlur\":14}");
+            CheckEqual("没有 GlassBlur 时沿用 3.3.0 的壁纸模糊", 14, fromWallpaper.GlassBlurValue);
+            AppConfig noImageNoBlur = serializer.Deserialize<AppConfig>("{\"BackgroundBlur\":14}");
+            CheckEqual("没设背景图时不沿用壁纸模糊", 40, noImageNoBlur.GlassBlurValue);
         }
 
         // ---------------------------------------------------------------- 详细统计汇总

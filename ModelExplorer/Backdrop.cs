@@ -34,7 +34,7 @@ namespace ModelExplorer
         {
             BackdropSettings settings = new BackdropSettings();
             settings.Fit = BackdropFit.Cover;
-            settings.Blur = AppConfig.DefaultBackgroundBlur;
+            settings.Blur = AppConfig.DefaultGlassBlur;
             settings.Darken = AppConfig.DefaultBackgroundDarken;
 
             if (config == null)
@@ -46,7 +46,8 @@ namespace ModelExplorer
                 ? null
                 : config.BackgroundImage.Trim();
             settings.Fit = ParseFit(config.BackgroundFitValue);
-            settings.Blur = config.BackgroundBlurValue;
+            // 模糊统一由「毛玻璃 → 模糊」控制：它同时作用于极光与自定义背景图
+            settings.Blur = config.GlassBlurValue;
             settings.Darken = config.BackgroundDarkenValue;
             return settings;
         }
@@ -138,53 +139,45 @@ namespace ModelExplorer
         /// <summary>
         /// 烘焙一张窗口背景位图。返回的位图是冻结的，可跨线程共享。
         /// </summary>
-        public static BitmapSource Render(double widthDip, double heightDip, AppTheme theme, BackdropSettings settings)
+        /// <param name="dpiScale">
+        /// 窗口所在显示器的缩放系数（1.0 = 100%）。按它出图，位图的像素密度与屏幕一致，
+        /// 高分屏上不再被放大约 1.5 倍，壁纸与极光都更干净。
+        /// </param>
+        public static BitmapSource Render(
+            double widthDip,
+            double heightDip,
+            double dpiScale,
+            AppTheme theme,
+            BackdropSettings settings)
         {
             if (theme == null || settings == null || widthDip < 4 || heightDip < 4)
             {
                 return null;
             }
 
-            return Render(widthDip, heightDip, theme, settings, theme.GlassLevel);
-        }
+            double dpi = dpiScale < 0.5 ? 1.0 : dpiScale;
 
-        private static BitmapSource Render(
-            double widthDip,
-            double heightDip,
-            AppTheme theme,
-            BackdropSettings settings,
-            int glassLevel)
-        {
             // 每次烘焙都从「无错误」开始：上一次的失败原因只在本次仍然失败时留下
             LastError = null;
             BitmapSource image = LoadImage(settings.ImagePath);
 
-            // 有背景图时用用户给的模糊值；没有图时沿用按玻璃档位推出的模糊，
-            // 这样「不设背景图」的观感与 v3.2.0 完全一致，滑杆也不至于影响不到的画面。
-            int blur = settings.Blur;
-            if (image == null)
-            {
-                blur = LevelBlur(glassLevel);
-            }
-
-            // 模糊时降采样一半：像素量变四分之一，模糊后放大回去肉眼看不出差别
-            int divisor = blur > 0 ? 2 : 1;
-            int pixelWidth = Math.Max(1, (int)Math.Round(widthDip / divisor));
-            int pixelHeight = Math.Max(1, (int)Math.Round(heightDip / divisor));
-            Rect bounds = new Rect(0, 0, pixelWidth, pixelHeight);
+            int pixelWidth = Math.Max(1, (int)Math.Round(widthDip * dpi));
+            int pixelHeight = Math.Max(1, (int)Math.Round(heightDip * dpi));
+            // 画布坐标仍是 DIP：RTB 用 96*dpi 出图，绘制时按 DIP 画即可
+            Rect bounds = new Rect(0, 0, widthDip, heightDip);
 
             DrawingVisual visual = new DrawingVisual();
             using (DrawingContext dc = visual.RenderOpen())
             {
-                DrawAurora(dc, bounds, theme, glassLevel, image != null);
+                DrawBase(dc, bounds, theme, image != null);
                 DrawImage(dc, bounds, image, settings.Fit);
             }
 
             RenderTargetBitmap target = new RenderTargetBitmap(
                 pixelWidth,
                 pixelHeight,
-                96,
-                96,
+                96 * dpi,
+                96 * dpi,
                 PixelFormats.Pbgra32);
             target.Render(visual);
 
@@ -192,15 +185,15 @@ namespace ModelExplorer
             byte[] pixels = new byte[stride * pixelHeight];
             target.CopyPixels(pixels, stride, 0);
 
-            int radius = divisor > 1 ? Math.Max(1, blur / divisor) : blur;
-            BoxBlur(pixels, pixelWidth, pixelHeight, radius);
-            ApplyDarkenAndGrain(pixels, settings.Darken, glassLevel, pixelWidth * pixelHeight);
+            // 模糊半径也是像素单位，所以要跟着 dpi 放大，视觉上的模糊程度才与设置一致
+            BoxBlur(pixels, pixelWidth, pixelHeight, (int)Math.Round(settings.Blur * dpi));
+            ApplyDarkenAndGrain(pixels, settings.Darken, pixelWidth * pixelHeight);
 
             BitmapSource result = BitmapSource.Create(
                 pixelWidth,
                 pixelHeight,
-                96,
-                96,
+                96 * dpi,
+                96 * dpi,
                 PixelFormats.Pbgra32,
                 null,
                 pixels,
@@ -209,19 +202,14 @@ namespace ModelExplorer
             return result;
         }
 
-        /// <summary>未设置背景图时的模糊半径：沿用 v3.2.0 按玻璃档位取值的那一套。</summary>
-        private static int LevelBlur(int glassLevel)
-        {
-            return glassLevel <= 1 ? 26 : (glassLevel == 2 ? 40 : 56);
-        }
-
         // ------------------------------------------------------------------ 绘制
 
-        private static void DrawAurora(DrawingContext dc, Rect bounds, AppTheme theme, int glassLevel, bool hasImage)
+        /// <summary>
+        /// 底色 + 极光。**设置了背景图时不画主题色极光**：用户要的是窗口保持透明、
+        /// 由自己的图决定颜色，再叠一层主题色相只会把图染脏（亮度可读性由暗化下限负责）。
+        /// </summary>
+        private static void DrawBase(DrawingContext dc, Rect bounds, AppTheme theme, bool hasImage)
         {
-            // 有背景图时极光退成淡淡一层色相点缀：图才是主角，极光只负责把界面和主题绑在一起
-            double scale = AuroraScale(glassLevel) * (hasImage ? 0.6 : 1.0);
-
             dc.DrawRectangle(
                 new LinearGradientBrush(
                     AppTheme.Blend(theme.Bg, Colors.White, 0.07),
@@ -231,15 +219,21 @@ namespace ModelExplorer
                 null,
                 bounds);
 
-            dc.DrawRectangle(MakeBlob(Colors.White, new Point(0.20, -0.10), 0.90, 0.80, 0.055 * scale), null, bounds);
-            dc.DrawRectangle(MakeBlob(Colors.White, new Point(0.88, 1.08), 0.85, 0.75, 0.045 * scale), null, bounds);
-            dc.DrawRectangle(MakeBlob(theme.AuroraPrimary, new Point(0.22, 0.04), 0.62, 0.50, 0.055 * scale), null, bounds);
-            dc.DrawRectangle(MakeBlob(theme.AuroraSecondary, new Point(0.92, 0.62), 0.60, 0.60, 0.055 * scale), null, bounds);
-            dc.DrawRectangle(MakeBlob(theme.AuroraTertiary, new Point(0.58, 1.05), 0.58, 0.45, 0.045 * scale), null, bounds);
+            // 有背景图：极光到此为止，只留这层中性底色给「填充 / 居中」模式留白用
+            if (hasImage)
+            {
+                return;
+            }
 
-            DrawRibbon(dc, bounds, theme.AuroraPrimary, 0.07 * scale, -22, 0.24);
-            DrawRibbon(dc, bounds, Colors.White, 0.05 * scale, -22, 0.52);
-            DrawRibbon(dc, bounds, theme.AuroraSecondary, 0.06 * scale, -22, 0.80);
+            dc.DrawRectangle(MakeBlob(Colors.White, new Point(0.20, -0.10), 0.90, 0.80, 0.055), null, bounds);
+            dc.DrawRectangle(MakeBlob(Colors.White, new Point(0.88, 1.08), 0.85, 0.75, 0.045), null, bounds);
+            dc.DrawRectangle(MakeBlob(theme.AuroraPrimary, new Point(0.22, 0.04), 0.62, 0.50, 0.055), null, bounds);
+            dc.DrawRectangle(MakeBlob(theme.AuroraSecondary, new Point(0.92, 0.62), 0.60, 0.60, 0.055), null, bounds);
+            dc.DrawRectangle(MakeBlob(theme.AuroraTertiary, new Point(0.58, 1.05), 0.58, 0.45, 0.045), null, bounds);
+
+            DrawRibbon(dc, bounds, theme.AuroraPrimary, 0.07, -22, 0.24);
+            DrawRibbon(dc, bounds, Colors.White, 0.05, -22, 0.52);
+            DrawRibbon(dc, bounds, theme.AuroraSecondary, 0.06, -22, 0.80);
         }
 
         private static Brush MakeBlob(Color color, Point center, double radiusX, double radiusY, double alpha)
@@ -430,7 +424,7 @@ namespace ModelExplorer
         /// 高分位自动补足，所以亮色壁纸也不会让小字糊掉；用户设得比下限更暗时以用户的为准，
         /// 设置项因此永远是「只会更暗」。
         /// </summary>
-        private static void ApplyDarkenAndGrain(byte[] pixels, int darkenPercent, int glassLevel, int pixelCount)
+        private static void ApplyDarkenAndGrain(byte[] pixels, int darkenPercent, int pixelCount)
         {
             int[] histogram = new int[256];
             for (int i = 0; i < pixelCount; i++)
@@ -462,8 +456,8 @@ namespace ModelExplorer
                 }
             }
 
-            // 颗粒：固定种子的噪声，让大面积色块不至于出现色带；幅度按玻璃档位
-            int amplitude = glassLevel <= 1 ? 3 : (glassLevel == 2 ? 4 : 5);
+            // 颗粒：固定种子的噪声，让大面积色块不至于出现色带
+            int amplitude = 4;
             Random random = new Random(20260912);
             for (int i = 0; i < pixelCount; i++)
             {
@@ -492,11 +486,6 @@ namespace ModelExplorer
                 return 255;
             }
             return (byte)result;
-        }
-
-        private static double AuroraScale(int glassLevel)
-        {
-            return glassLevel <= 1 ? 0.7 : (glassLevel == 2 ? 1.0 : 1.25);
         }
 
         // ------------------------------------------------------------------ 背景图解码

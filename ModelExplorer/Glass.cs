@@ -56,7 +56,7 @@ namespace ModelExplorer
         {
             BackdropSettings settings = new BackdropSettings();
             settings.Fit = BackdropFit.Cover;
-            settings.Blur = AppConfig.DefaultBackgroundBlur;
+            settings.Blur = AppConfig.DefaultGlassBlur;
             settings.Darken = AppConfig.DefaultBackgroundDarken;
             return settings;
         }
@@ -99,7 +99,7 @@ namespace ModelExplorer
         /// <summary>
         /// 把背景层插入宿主。宿主第一个子元素应当是窗口的不透明底色，
         /// 背景层插在它之上、边框描边之下（描边必须留在最上层，否则窗口外框会被糊掉）。
-        /// 玻璃档位为 0 时只负责移除旧层，观感回到 v3.1.3 的纯色。
+        /// 透明度为 0（面板全不透明）时只负责移除旧层：背景反正看不见，没必要烘焙。
         /// </summary>
         public static void Apply(Grid host, AppTheme theme)
         {
@@ -110,7 +110,7 @@ namespace ModelExplorer
 
             RemoveBackdrop(host);
 
-            if (theme.GlassLevel <= 0)
+            if (theme.GlassOpacity <= 0)
             {
                 return;
             }
@@ -227,7 +227,18 @@ namespace ModelExplorer
                     return;
                 }
 
-                BitmapSource bitmap = Backdrop.Render(width, height, _theme, _settings);
+                // 按显示器缩放出图：位图像素与屏幕一一对应，高分屏上壁纸不再被拉糊
+                double dpi = 1.0;
+                try
+                {
+                    dpi = VisualTreeHelper.GetDpi(_surface).DpiScaleX;
+                }
+                catch (InvalidOperationException)
+                {
+                    // 还没接到 PresentationSource（极少见），退回 100%
+                }
+
+                BitmapSource bitmap = Backdrop.Render(width, height, dpi, _theme, _settings);
                 if (bitmap == null)
                 {
                     return;

@@ -60,10 +60,20 @@ namespace ModelExplorer
         public bool? Glass { get; set; }
 
         /// <summary>
-        /// 毛玻璃强度：0 = 轻柔，1 = 标准，2 = 浓郁。同样可空，缺失时按
-        /// <see cref="DefaultGlassStrength"/> 处理，越界值由 <see cref="GlassStrengthValue"/> 夹回。
+        /// 旧版（3.2.0 / 3.3.0）的三档强度：0 = 轻柔，1 = 标准，2 = 浓郁。
+        /// 3.4.0 起界面改成「模糊 + 透明度」两个滑杆，这个字段只用于把旧配置的观感迁移过来，
+        /// 不再有新界面写它。缺失（null）时按 <see cref="DefaultGlassStrength"/> 处理。
         /// </summary>
         public int? GlassStrength { get; set; }
+
+        /// <summary>毛玻璃模糊（像素，0～60）：作用在整层背景上（极光与自定义背景图都算）。</summary>
+        public int? GlassBlur { get; set; }
+
+        /// <summary>
+        /// 毛玻璃透明度（百分比，0～100）。0 = 面板完全不透明（背景被挡住），
+        /// 100 = 面板完全透明，只剩边框。旧配置缺失时由三档强度换算。
+        /// </summary>
+        public int? GlassOpacity { get; set; }
 
         // ---- 背景图 ----
         /// <summary>自定义背景图路径，空 = 只用极光背景。六个窗口共用同一张图。</summary>
@@ -87,6 +97,9 @@ namespace ModelExplorer
         public const string DefaultStlUnits = "mm";
         public const string DefaultStlQuality = "Fine";
         public const int DefaultGlassStrength = 1;
+        public const int DefaultGlassBlur = 40;
+        public const int DefaultGlassOpacity = 26;
+        public const int MaxGlassBlur = 60;
         public const string DefaultBackgroundFit = "cover";
         public const int DefaultBackgroundBlur = 8;
         public const int DefaultBackgroundDarken = 50;
@@ -105,7 +118,7 @@ namespace ModelExplorer
             get { return Glass != false; }
         }
 
-        /// <summary>实际生效的毛玻璃强度，夹到 0～2。</summary>
+        /// <summary>实际生效的毛玻璃强度，夹到 0～2（仅迁移用）。</summary>
         public int GlassStrengthValue
         {
             get
@@ -121,6 +134,49 @@ namespace ModelExplorer
                 }
                 return value;
             }
+        }
+
+        /// <summary>
+        /// 实际生效的毛玻璃模糊。优先级：新字段 → 3.3.0 的壁纸模糊（设了背景图时）
+        /// → 旧三档强度换算。这样任何一代旧配置升级上来都不会突然变糊或变锐。
+        /// </summary>
+        public int GlassBlurValue
+        {
+            get
+            {
+                if (GlassBlur.HasValue)
+                {
+                    return ClampInt(GlassBlur.Value, 0, MaxGlassBlur);
+                }
+                if (!string.IsNullOrEmpty(BackgroundImage) && BackgroundBlur > 0)
+                {
+                    return ClampInt(BackgroundBlur, 0, MaxGlassBlur);
+                }
+                return StrengthBlur(GlassStrengthValue);
+            }
+        }
+
+        /// <summary>实际生效的毛玻璃透明度：新字段优先，其次由旧三档强度换算。</summary>
+        public int GlassOpacityValue
+        {
+            get
+            {
+                if (GlassOpacity.HasValue)
+                {
+                    return ClampInt(GlassOpacity.Value, 0, 100);
+                }
+                return StrengthOpacity(GlassStrengthValue);
+            }
+        }
+
+        private static int StrengthBlur(int strength)
+        {
+            return strength <= 0 ? 26 : (strength == 1 ? 40 : 56);
+        }
+
+        private static int StrengthOpacity(int strength)
+        {
+            return strength <= 0 ? 14 : (strength == 1 ? 26 : 38);
         }
 
         /// <summary>实际生效的背景图适配方式；非法值一律回退到 cover。</summary>
@@ -183,6 +239,8 @@ namespace ModelExplorer
             config.StlQuality = DefaultStlQuality;
             config.Glass = true;
             config.GlassStrength = DefaultGlassStrength;
+            config.GlassBlur = DefaultGlassBlur;
+            config.GlassOpacity = DefaultGlassOpacity;
             config.BackgroundImage = "";
             config.BackgroundFit = DefaultBackgroundFit;
             config.BackgroundBlur = DefaultBackgroundBlur;

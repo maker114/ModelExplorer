@@ -31,15 +31,17 @@ namespace ModelExplorer
 
         // ---- 毛玻璃 ----
         //
-        // 画刷按玻璃等级惰性重建：等级为 0 时返回与旧版逐像素一致的实色画刷，
+        // 画刷按透明度惰性重建：透明度为 0 时返回与旧版逐像素一致的实色画刷，
         // 因此「关闭毛玻璃」不需要任何额外分支，观感直接回到 v3.1.3。
-        private int _glassLevel;
-        private int _brushLevel = -1;
+        private int _glassOpacity;
+        private int _brushOpacity = -1;
         private Brush _bgBrush;
         private Brush _windowBaseBrush;
         private Brush _sidebarBrush;
         private Brush _panelBrush;
         private Brush _panelActiveBrush;
+        private Brush _opaquePanelBrush;
+        private Brush _opaquePanelActiveBrush;
         private Brush _popupBrush;
         private Brush _borderBrush;
         private Brush _textBrush;
@@ -53,8 +55,8 @@ namespace ModelExplorer
         private Brush _errorBrush;
         private Brush _codeBrush;
 
-        /// <summary>玻璃等级：0 关闭，1 轻柔，2 标准，3 浓郁。由 <see cref="ThemeManager.ApplyGlass"/> 设置。</summary>
-        public int GlassLevel { get { return _glassLevel; } }
+        /// <summary>毛玻璃透明度（0～100）：0 = 面板不透明。由 <see cref="ThemeManager.ApplyGlass"/> 设置。</summary>
+        public int GlassOpacity { get { return _glassOpacity; } }
 
         /// <summary>
         /// 极光背景的三个光斑颜色。直接跟随主题里已有的强调色 / STL 色 / 装配体色，
@@ -82,39 +84,49 @@ namespace ModelExplorer
         public Brush CodeBrush { get { EnsureBrushes(); return _codeBrush; } }
 
         /// <summary>
+        /// 不透明面板色。给「不该透出背景」的地方用：工程名检查弹窗的列表行、
+        /// 下拉菜单的选项——那些地方文字密集，透出壁纸只会更难读。
+        /// </summary>
+        public Brush OpaquePanelBrush { get { EnsureBrushes(); return _opaquePanelBrush; } }
+
+        /// <summary>不透明面板色（悬停 / 表头态）。</summary>
+        public Brush OpaquePanelActiveBrush { get { EnsureBrushes(); return _opaquePanelActiveBrush; } }
+
+        /// <summary>
         /// 下拉弹窗底色。弹窗是独立的顶层窗口，背后就是主界面本身（不是极光层），
-        /// 半透明会直接透出下面的文字，因此这里始终接近不透明。
+        /// 半透明会直接透出下面的文字，因此始终不透明。
         /// </summary>
         public Color PopupColor
         {
-            get { return _glassLevel <= 0 ? Panel : WithAlpha(Panel, 0.97); }
+            get { return Panel; }
         }
 
         /// <summary>窗口底层的不透明底色。毛玻璃必须画在它之上：分层窗口一旦整体半透明，
         /// 就会直接透出桌面或下层窗口，压在上面的文字必然不可读。</summary>
         public Brush WindowBaseBrush { get { EnsureBrushes(); return _windowBaseBrush; } }
 
-        public void SetGlassLevel(int level)
+        /// <summary>设置毛玻璃透明度（0～100）：越大面板越透。</summary>
+        public void SetGlassOpacity(int percent)
         {
-            if (level < 0)
+            if (percent < 0)
             {
-                level = 0;
+                percent = 0;
             }
-            if (level > 3)
+            if (percent > 100)
             {
-                level = 3;
+                percent = 100;
             }
-            if (level == _glassLevel && _brushLevel == _glassLevel)
+            if (percent == _glassOpacity && _brushOpacity == _glassOpacity)
             {
                 return;
             }
-            _glassLevel = level;
-            _brushLevel = -1;
+            _glassOpacity = percent;
+            _brushOpacity = -1;
         }
 
         private void EnsureBrushes()
         {
-            if (_brushLevel == _glassLevel && _bgBrush != null)
+            if (_brushOpacity == _glassOpacity && _bgBrush != null)
             {
                 return;
             }
@@ -132,49 +144,32 @@ namespace ModelExplorer
             _errorBrush = MakeBrush(Error);
             // 日志区要读长文本，始终不透明
             _codeBrush = MakeBrush(Code);
+            // 列表与下拉菜单要的是「不透出背景」，与透明度滑杆无关
+            _opaquePanelBrush = MakeBrush(Panel);
+            _opaquePanelActiveBrush = MakeBrush(PanelActive);
+            _popupBrush = MakeBrush(Panel);
 
-            if (_glassLevel <= 0)
+            if (_glassOpacity <= 0)
             {
                 _sidebarBrush = MakeBrush(Sidebar);
                 _panelBrush = MakeBrush(Panel);
                 _panelActiveBrush = MakeBrush(PanelActive);
-                _popupBrush = MakeBrush(Panel);
                 _borderBrush = MakeBrush(Border);
             }
             else
             {
+                // 面板填充 = 1 - 透明度；侧栏比面板更实一点，否则压在壁纸上的正文会发飘
+                double alpha = 1 - _glassOpacity / 100.0;
                 // 玻璃面板的填充色要比原色更亮一点：近黑底上「更暗的半透明」看起来和背景没区别，
                 // 略微向白靠才像一层浮起来的磨砂玻璃。
-                _sidebarBrush = MakeGlassBrush(Blend(Sidebar, Colors.White, 0.05), SidebarAlpha);
-                _panelBrush = MakeGlassBrush(Blend(Panel, Colors.White, 0.09), PanelAlpha);
+                _sidebarBrush = MakeGlassBrush(Blend(Sidebar, Colors.White, 0.05), alpha + 0.06);
+                _panelBrush = MakeGlassBrush(Blend(Panel, Colors.White, 0.09), alpha);
                 // 悬停 / 选中态是压在玻璃面板上的小色块，用纯色半透明即可，不需要再做渐变
-                _panelActiveBrush = MakeBrush(WithAlpha(PanelActive, PanelActiveAlpha));
-                // 下拉弹窗是独立的顶层窗口，背后就是主界面本身，必须接近不透明才读得清
-                _popupBrush = MakeBrush(PopupColor);
-                _borderBrush = MakeBrush(WithAlpha(Blend(Border, Colors.White, 0.18), BorderAlpha));
+                _panelActiveBrush = MakeBrush(WithAlpha(PanelActive, alpha + 0.16));
+                _borderBrush = MakeBrush(WithAlpha(Blend(Border, Colors.White, 0.18), 1 - alpha * 0.7));
             }
 
-            _brushLevel = _glassLevel;
-        }
-
-        private double SidebarAlpha
-        {
-            get { return _glassLevel == 1 ? 0.86 : (_glassLevel == 2 ? 0.80 : 0.72); }
-        }
-
-        private double PanelAlpha
-        {
-            get { return _glassLevel == 1 ? 0.84 : (_glassLevel == 2 ? 0.74 : 0.62); }
-        }
-
-        private double PanelActiveAlpha
-        {
-            get { return _glassLevel == 1 ? 0.94 : (_glassLevel == 2 ? 0.90 : 0.84); }
-        }
-
-        private double BorderAlpha
-        {
-            get { return _glassLevel == 1 ? 0.80 : (_glassLevel == 2 ? 0.70 : 0.58); }
+            _brushOpacity = _glassOpacity;
         }
 
         /// <summary>
@@ -355,10 +350,10 @@ namespace ModelExplorer
         public static void Apply(string name)
         {
             AppTheme theme = Presets.Find(t => t.Name == name);
-            // 只换配色时保留当前玻璃等级：主题与毛玻璃是两个独立的设置项
-            int level = Current == null ? 0 : Current.GlassLevel;
+            // 只换配色时保留当前透明度：主题与毛玻璃是两个独立的设置项
+            int opacity = Current == null ? 0 : Current.GlassOpacity;
             Current = theme ?? Presets[0];
-            Current.SetGlassLevel(level);
+            Current.SetGlassOpacity(opacity);
         }
 
         /// <summary>
@@ -375,35 +370,21 @@ namespace ModelExplorer
             }
 
             Apply(config.Theme);
-            ApplyGlass(config.UseGlass, config.GlassStrengthValue);
+            ApplyGlass(config.UseGlass, config.GlassOpacityValue);
         }
 
         /// <summary>
-        /// 设置毛玻璃。强度用配置里的 0 / 1 / 2（轻柔 / 标准 / 浓郁），
-        /// 内部等级是 1 / 2 / 3，0 专表示关闭。
+        /// 设置毛玻璃透明度：0 = 面板不透明（背景被完全挡住，此时 Glass 不会再铺背景层），
+        /// 100 = 面板完全透明。关闭开关等价于 0。
         /// </summary>
-        public static void ApplyGlass(bool enabled, int strength)
+        public static void ApplyGlass(bool enabled, int opacityPercent)
         {
             if (Current == null)
             {
                 return;
             }
 
-            int level = 0;
-            if (enabled)
-            {
-                if (strength < 0)
-                {
-                    strength = 0;
-                }
-                if (strength > 2)
-                {
-                    strength = 2;
-                }
-                level = strength + 1;
-            }
-
-            Current.SetGlassLevel(level);
+            Current.SetGlassOpacity(enabled ? opacityPercent : 0);
         }
     }
 
@@ -723,7 +704,12 @@ namespace ModelExplorer
 
         /// <summary>
         /// 分段选择按钮（背景图「适配」那一排）。用 RadioButton 拿到互斥语义，
-        /// 选中态填充强调色并把文字压成深色，未选中态是面板色 + 静音文字。
+        /// 选中态填充强调色并把文字压成深色，未选中态是面板色 + 常规文字色。
+        ///
+        /// 文字颜色必须用 TargetName 打在 ContentPresenter 上，不能写
+        /// <c>&lt;Setter Property='Foreground'&gt;</c>：本地值（控件构造时赋的
+        /// Foreground）优先级高于模板触发器，选中态会被本地值盖掉，
+        /// 结果就是强调色底上压着灰字看不清。
         /// </summary>
         public static ControlTemplate SegmentTemplate()
         {
@@ -736,13 +722,13 @@ namespace ModelExplorer
                 " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='RadioButton'>" +
                 "<Border x:Name='bd' CornerRadius='8' Background='" + panel + "'" +
                 " BorderBrush='" + border + "' BorderThickness='1' Padding='0,7'>" +
-                "<ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>" +
+                "<ContentPresenter x:Name='presenter' HorizontalAlignment='Center' VerticalAlignment='Center'/>" +
                 "</Border>" +
                 "<ControlTemplate.Triggers>" +
                 "<Trigger Property='IsChecked' Value='True'>" +
                 "<Setter TargetName='bd' Property='Background' Value='" + accent + "'/>" +
                 "<Setter TargetName='bd' Property='BorderBrush' Value='" + accent + "'/>" +
-                "<Setter Property='Foreground' Value='" + dark + "'/>" +
+                "<Setter TargetName='presenter' Property='TextElement.Foreground' Value='" + dark + "'/>" +
                 "</Trigger>" +
                 "<Trigger Property='IsMouseOver' Value='True'>" +
                 "<Setter TargetName='bd' Property='BorderBrush' Value='" + accent + "'/>" +

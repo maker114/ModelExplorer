@@ -102,7 +102,7 @@ namespace ModelExplorer
 
             Border rootBanner = new Border
             {
-                Background = theme.PanelActiveBrush,
+                Background = theme.OpaquePanelActiveBrush,
                 BorderBrush = theme.AccentBrush,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(9),
@@ -285,9 +285,10 @@ namespace ModelExplorer
 
         private static Border CreateRowBorder(AppTheme theme, bool header)
         {
+            // 列表用不透明面板色：这是一屏密集文字，让壁纸透上来只会更难读
             Border border = new Border
             {
-                Background = header ? theme.PanelActiveBrush : theme.PanelBrush,
+                Background = header ? theme.OpaquePanelActiveBrush : theme.OpaquePanelBrush,
                 BorderBrush = header ? theme.BorderBrush : new SolidColorBrush(Color.FromRgb(0x24, 0x24, 0x24)),
                 BorderThickness = new Thickness(1, 1, 1, header ? 1 : 0),
                 CornerRadius = new CornerRadius(6),
