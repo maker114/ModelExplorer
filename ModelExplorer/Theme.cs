@@ -256,7 +256,7 @@ namespace ModelExplorer
         static ThemeManager()
         {
             Presets = new List<AppTheme>();
-            Presets.Add(new AppTheme
+            AppTheme preset1 = new AppTheme
             {
                 Name = "终末地配色",
                 Bg = Color.FromRgb(0x10, 0x10, 0x10),
@@ -268,14 +268,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0xB0, 0xB0, 0xB0),
                 Accent = Color.FromRgb(0xF5, 0xC5, 0x18),
                 AccentHover = Color.FromRgb(0xFF, 0xD7, 0x5E),
-                PartColor = Color.FromRgb(0xE8, 0xE8, 0xE8),
-                AssemblyColor = Color.FromRgb(0xFF, 0xD7, 0x5E),
-                StlColor = Color.FromRgb(0x8F, 0xA8, 0xC8),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x0A, 0x0A, 0x0A)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset1);
+            AppTheme preset2 = new AppTheme
             {
                 Name = "暗夜蓝",
                 Bg = Color.FromRgb(0x0E, 0x17, 0x26),
@@ -287,14 +285,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0x93, 0xA9, 0xC4),
                 Accent = Color.FromRgb(0x3B, 0x9E, 0xFF),
                 AccentHover = Color.FromRgb(0x6D, 0xB9, 0xFF),
-                PartColor = Color.FromRgb(0x8F, 0xC7, 0xFF),
-                AssemblyColor = Color.FromRgb(0x4D, 0xD6, 0xD6),
-                StlColor = Color.FromRgb(0xB3, 0xA7, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x0A, 0x10, 0x18)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset2);
+            AppTheme preset3 = new AppTheme
             {
                 Name = "翡翠绿",
                 Bg = Color.FromRgb(0x0D, 0x18, 0x15),
@@ -306,14 +302,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0x8F, 0xB8, 0xA9),
                 Accent = Color.FromRgb(0x2F, 0xB5, 0x7D),
                 AccentHover = Color.FromRgb(0x5E, 0xD2, 0x9D),
-                PartColor = Color.FromRgb(0x8B, 0xE3, 0xB8),
-                AssemblyColor = Color.FromRgb(0xB9, 0xE8, 0x8F),
-                StlColor = Color.FromRgb(0x6E, 0xC1, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x08, 0x12, 0x10)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset3);
+            AppTheme preset4 = new AppTheme
             {
                 Name = "紫罗兰",
                 Bg = Color.FromRgb(0x16, 0x11, 0x22),
@@ -325,14 +319,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0xA9, 0x9B, 0xC7),
                 Accent = Color.FromRgb(0xA7, 0x8B, 0xFA),
                 AccentHover = Color.FromRgb(0xC3, 0xAE, 0xFC),
-                PartColor = Color.FromRgb(0xCB, 0xB8, 0xFF),
-                AssemblyColor = Color.FromRgb(0xF2, 0xC6, 0xFF),
-                StlColor = Color.FromRgb(0x8F, 0xC7, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x0F, 0x0B, 0x17)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset4);
+            AppTheme preset5 = new AppTheme
             {
                 Name = "熔岩红",
                 Bg = Color.FromRgb(0x1A, 0x0F, 0x10),
@@ -344,14 +336,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0xD0, 0xA2, 0xA6),
                 Accent = Color.FromRgb(0xFF, 0x5C, 0x5C),
                 AccentHover = Color.FromRgb(0xFF, 0x8A, 0x8A),
-                PartColor = Color.FromRgb(0xFF, 0x9A, 0x8A),
-                AssemblyColor = Color.FromRgb(0xFF, 0xD0, 0x8A),
-                StlColor = Color.FromRgb(0xFF, 0xC3, 0xE0),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x13, 0x09, 0x0A)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset5);
+            AppTheme preset6 = new AppTheme
             {
                 Name = "暖阳金",
                 Bg = Color.FromRgb(0x19, 0x16, 0x10),
@@ -363,16 +353,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0xD0, 0xBC, 0x9E),
                 Accent = Color.FromRgb(0xF5, 0xC4, 0x51),
                 AccentHover = Color.FromRgb(0xFF, 0xD9, 0x7A),
-                PartColor = Color.FromRgb(0xFF, 0xE0, 0x8A),
-                AssemblyColor = Color.FromRgb(0xF0, 0xA8, 0x68),
-                StlColor = Color.FromRgb(0x8F, 0xC7, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x12, 0x0F, 0x0A)
-            });
-            // V3.4.1 新增六套：玻璃材质改成无色之后，预设之间的差异主要体现在强调色与状态色上，
-            // 所以这里按色相铺开（含一套完全中性的石墨灰，配壁纸最百搭）。
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset6);
+            AppTheme preset7 = new AppTheme
             {
                 Name = "石墨灰",
                 Bg = Color.FromRgb(0x12, 0x12, 0x12),
@@ -384,14 +370,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0xAB, 0xAB, 0xAB),
                 Accent = Color.FromRgb(0xD8, 0xD8, 0xD8),
                 AccentHover = Color.FromRgb(0xF5, 0xF5, 0xF5),
-                PartColor = Color.FromRgb(0xE6, 0xE6, 0xE6),
-                AssemblyColor = Color.FromRgb(0xC9, 0xC9, 0xC9),
-                StlColor = Color.FromRgb(0x9C, 0xB0, 0xC4),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x0A, 0x0A, 0x0A)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset7);
+            AppTheme preset8 = new AppTheme
             {
                 Name = "深海青",
                 Bg = Color.FromRgb(0x08, 0x17, 0x1A),
@@ -403,14 +387,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0x8F, 0xB6, 0xB6),
                 Accent = Color.FromRgb(0x2F, 0xC7, 0xC0),
                 AccentHover = Color.FromRgb(0x63, 0xDE, 0xD8),
-                PartColor = Color.FromRgb(0x8F, 0xE3, 0xDE),
-                AssemblyColor = Color.FromRgb(0xA8, 0xE6, 0xA1),
-                StlColor = Color.FromRgb(0x7F, 0xC4, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x05, 0x10, 0x0F)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset8);
+            AppTheme preset9 = new AppTheme
             {
                 Name = "樱花粉",
                 Bg = Color.FromRgb(0x1A, 0x10, 0x14),
@@ -422,14 +404,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0xD3, 0xA4, 0xB0),
                 Accent = Color.FromRgb(0xFF, 0x7B, 0xA8),
                 AccentHover = Color.FromRgb(0xFF, 0xA0, 0xC2),
-                PartColor = Color.FromRgb(0xFF, 0xC2, 0xD6),
-                AssemblyColor = Color.FromRgb(0xFF, 0xD9, 0xA8),
-                StlColor = Color.FromRgb(0x9F, 0xB6, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x12, 0x0A, 0x0D)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset9);
+            AppTheme preset10 = new AppTheme
             {
                 Name = "靛蓝",
                 Bg = Color.FromRgb(0x0D, 0x10, 0x24),
@@ -441,14 +421,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0x9B, 0xA4, 0xD0),
                 Accent = Color.FromRgb(0x6E, 0x7B, 0xFF),
                 AccentHover = Color.FromRgb(0x93, 0xA0, 0xFF),
-                PartColor = Color.FromRgb(0xB7, 0xC0, 0xFF),
-                AssemblyColor = Color.FromRgb(0x7F, 0xE0, 0xD0),
-                StlColor = Color.FromRgb(0x8F, 0xB8, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x08, 0x0A, 0x18)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset10);
+            AppTheme preset11 = new AppTheme
             {
                 Name = "赤陶橙",
                 Bg = Color.FromRgb(0x1A, 0x12, 0x10),
@@ -460,14 +438,12 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0xD0, 0xA8, 0x95),
                 Accent = Color.FromRgb(0xE8, 0x76, 0x3C),
                 AccentHover = Color.FromRgb(0xFF, 0x95, 0x58),
-                PartColor = Color.FromRgb(0xFF, 0xB9, 0x8A),
-                AssemblyColor = Color.FromRgb(0xFF, 0xD0, 0x8A),
-                StlColor = Color.FromRgb(0x8F, 0xC7, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x12, 0x0C, 0x09)
-            });
-            Presets.Add(new AppTheme
+            };
+            Presets.Add(preset11);
+            AppTheme preset12 = new AppTheme
             {
                 Name = "苔原绿",
                 Bg = Color.FromRgb(0x10, 0x14, 0x10),
@@ -479,27 +455,130 @@ namespace ModelExplorer
                 Muted = Color.FromRgb(0xA9, 0xBC, 0xA0),
                 Accent = Color.FromRgb(0x8F, 0xBF, 0x4A),
                 AccentHover = Color.FromRgb(0xAF, 0xD9, 0x6C),
-                PartColor = Color.FromRgb(0xC6, 0xE3, 0x9A),
-                AssemblyColor = Color.FromRgb(0xE3, 0xD0, 0x8A),
-                StlColor = Color.FromRgb(0x8F, 0xC7, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x0A, 0x0E, 0x09)
-            });
-
+            };
+            Presets.Add(preset12);
             Current = Presets[0];
 
             // V3.4.2：统一降饱和。原来的强调色（熔岩红 #FF5C5C 之类）压在深色界面上很跳，
             // 与参考的低饱和风格不符；这里对每套预设的**所有**颜色做同一比例的降饱和，
             // 源值仍保留原始饱和度，只调 SoftnessRatio 一个常数就能整体收紧或放松。
+            //
+            // V3.4.8：统一降饱和顺带把类型色压到了一起。原先三组类型色（零件 / 装配体 / STL）
+            // 逐套手写，12 套里 STL 有 11 套是蓝色系（#8FC7FF 一个值就出现 4 次），降饱和后
+            // 蓝色彼此更分不开，看起来像「所有配色的 STL 标签都是蓝的」。现在改为由每套自己的
+            // 强调色相推导：色相按槽位错开，饱和度与明度分槽位固定，于是 12 套的三色互不重复，
+            // 又都跟本套配色的调子一致。
             foreach (AppTheme preset in Presets)
             {
+                ApplyGroupColors(preset);
                 preset.Soften(SoftnessRatio);
             }
         }
 
         /// <summary>降饱和时保留的饱和度比例：1 = 原样，0 = 完全灰。V3.4.2 定为 0.62。</summary>
         private const double SoftnessRatio = 0.62;
+
+        /// <summary>
+        /// 推导一套配色的三组类型色（零件 / 装配体 / STL）。
+        ///
+        /// 三个槽位的明度刻意拉开：零件最亮、装配体与 STL 稍暗，既保住原先「亮 / 中 / 中」的层次，
+        /// 也让三者在一套配色里靠色相 + 明度双重区分。饱和度取得比纯色低，是为「推导后还要再走
+        /// 一遍统一降饱和」留量——0.46 的 HSL 饱和度过一遍 0.62 后落在 0.3 上下，与原来的手写值同量级。
+        /// </summary>
+        private static void ApplyGroupColors(AppTheme preset)
+        {
+            double hue = HueOf(preset.Accent);
+            // 完全中性的强调色（石墨灰）没有色相可用，否则会退化成纯红，给一个中性蓝代替
+            if (hue < 0)
+            {
+                hue = 210;
+            }
+
+            preset.PartColor = HslToRgb(hue - 15, 0.46, 0.82);
+            preset.AssemblyColor = HslToRgb(hue + 35, 0.46, 0.68);
+            preset.StlColor = HslToRgb(hue - 150, 0.46, 0.68);
+        }
+
+        /// <summary>色相（0～360）。完全中性（R=G=B）时返回 -1，让调用方决定回退值。</summary>
+        private static double HueOf(Color color)
+        {
+            double r = color.R / 255.0;
+            double g = color.G / 255.0;
+            double b = color.B / 255.0;
+            double max = Math.Max(r, Math.Max(g, b));
+            double min = Math.Min(r, Math.Min(g, b));
+            double delta = max - min;
+            if (delta <= 0)
+            {
+                return -1;
+            }
+
+            double hue;
+            if (max == r)
+            {
+                hue = ((g - b) / delta) % 6;
+            }
+            else if (max == g)
+            {
+                hue = (b - r) / delta + 2;
+            }
+            else
+            {
+                hue = (r - g) / delta + 4;
+            }
+
+            hue *= 60;
+            if (hue < 0)
+            {
+                hue += 360;
+            }
+            return hue;
+        }
+
+        /// <summary>HSL → sRGB（色相自动绕回 0～360）。</summary>
+        private static Color HslToRgb(double hue, double saturation, double lightness)
+        {
+            hue = ((hue % 360) + 360) % 360;
+            double chroma = (1 - Math.Abs(2 * lightness - 1)) * saturation;
+            double second = chroma * (1 - Math.Abs((hue / 60) % 2 - 1));
+            double match = lightness - chroma / 2;
+
+            double r;
+            double g;
+            double b;
+            if (hue < 60)
+            {
+                r = chroma; g = second; b = 0;
+            }
+            else if (hue < 120)
+            {
+                r = second; g = chroma; b = 0;
+            }
+            else if (hue < 180)
+            {
+                r = 0; g = chroma; b = second;
+            }
+            else if (hue < 240)
+            {
+                r = 0; g = second; b = chroma;
+            }
+            else if (hue < 300)
+            {
+                r = second; g = 0; b = chroma;
+            }
+            else
+            {
+                r = chroma; g = 0; b = second;
+            }
+
+            return Color.FromRgb(
+                (byte)Math.Round((r + match) * 255),
+                (byte)Math.Round((g + match) * 255),
+                (byte)Math.Round((b + match) * 255));
+        }
 
         public static void Apply(string name)
         {
