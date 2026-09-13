@@ -57,6 +57,8 @@ namespace ModelExplorer
         private bool _uiReady;
         private string _backgroundImage;
         private bool _backgroundSaved;
+        private Border _navDivider;
+        private ScrollViewer _activePageView;
         private TextBlock _backgroundPathText;
         private TextBlock _backgroundFitHint;
         private Button _backgroundClearButton;
@@ -130,16 +132,20 @@ namespace ModelExplorer
             Grid.SetColumn(nav, 0);
             body.Children.Add(nav);
 
-            // 导航与内容之间一条 1px 分隔线，和参考图一致
-            Border divider = new Border
+            // 导航与内容之间一条 1px 分隔线，和参考图一致。
+            // 长度不能跟着内容区一起拉满：卡片只有两张时，线会一直拖到窗口底部，
+            // 勾出一道谁都不挨着的空档（用户反馈的「位置错误的竖线」）。
+            // 这里让它只覆盖当前页的卡片范围，并随滚动一起走，见 UpdateNavDivider。
+            _navDivider = new Border
             {
                 Width = 1,
                 Background = theme.BorderBrush,
                 HorizontalAlignment = HorizontalAlignment.Left,
-                Margin = new Thickness(NavWidth - 8, 8, 0, 8)
+                Margin = new Thickness(NavWidth, 8, 0, 8),
+                Tag = "SettingsNavDivider"
             };
-            Grid.SetColumn(divider, 1);
-            body.Children.Add(divider);
+            Grid.SetColumn(_navDivider, 1);
+            body.Children.Add(_navDivider);
 
             Grid pages = new Grid { Margin = new Thickness(20, 0, 18, 0) };
             Grid.SetColumn(pages, 1);
@@ -174,6 +180,10 @@ namespace ModelExplorer
             // 控件都建完了才允许「实时预览」：滑杆初始化时会触发 ValueChanged，
             // 那时背景图分区的控件还不存在
             _uiReady = true;
+            // 布局还没跑，卡片高度此刻都是 0；排完版再量一次分隔线
+            Dispatcher.BeginInvoke(
+                new Action(UpdateNavDivider),
+                System.Windows.Threading.DispatcherPriority.Loaded);
         }
 
         /// <summary>建一个分类页：导航项 + 该页的滚动容器，导航切换时切可见性。</summary>
@@ -218,6 +228,7 @@ namespace ModelExplorer
 
             NavVisual visual = new NavVisual { Button = button, Label = label, Glyph = glyph };
             _navVisuals.Add(visual);
+            view.ScrollChanged += delegate { TrackNavDivider(view); };
             button.Checked += delegate
             {
                 foreach (UIElement child in pages.Children)
@@ -231,6 +242,7 @@ namespace ModelExplorer
                     item.Label.Foreground = active ? theme.TextBrush : theme.MutedBrush;
                     item.Glyph.Stroke = active ? theme.AccentBrush : theme.MutedBrush;
                 }
+                TrackNavDivider(view);
             };
 
             nav.Children.Add(button);
@@ -286,8 +298,19 @@ namespace ModelExplorer
             _glassBlurValue.Text = ((int)Math.Round(_glassBlurSlider.Value)) + " px";
             _glassOpacityValue.Text = ((int)Math.Round(_glassOpacitySlider.Value)) + " %";
             SetGlassControlsEnabled(_source.UseGlass);
-            _glassSwitch.Checked += delegate { SetGlassControlsEnabled(true); };
-            _glassSwitch.Unchecked += delegate { SetGlassControlsEnabled(false); };
+            // 开关要**实时生效**，和两个滑杆一致：此前它只改滑杆的可用状态，
+            // 关掉再打开时主题的透明度还停在 0，界面就一直是实色的
+            // （看着像「透明度被重置了」，用户反馈）。
+            _glassSwitch.Checked += delegate
+            {
+                SetGlassControlsEnabled(true);
+                PreviewGlass();
+            };
+            _glassSwitch.Unchecked += delegate
+            {
+                SetGlassControlsEnabled(false);
+                PreviewGlass();
+            };
 
             BuildBackgroundCard(page, theme);
 
@@ -972,6 +995,103 @@ namespace ModelExplorer
         {
             _glassBlurSlider.IsEnabled = enabled;
             _glassOpacitySlider.IsEnabled = enabled;
+        }
+
+        /// <summary>记录当前分类页，并按它的滚动位置刷新分隔线长度。</summary>
+        private void TrackNavDivider(ScrollViewer view)
+        {
+            _activePageView = view;
+            UpdateNavDivider();
+        }
+
+        /// <summary>
+        /// 让导航分隔线只覆盖当前页**可见的卡片范围**。
+        ///
+        /// 分隔线此前是内容列里的一个拉伸元素，长度等于整个内容区的高度；卡片只有两张时，
+        /// 线会一路拖到窗口底部，看着像一条位置错误的竖线（用户反馈）。
+        /// 现在按活动页算：起点是页面上边距 + 首张卡片的上外边距 − 滚动偏移，
+        /// 终点是末张卡片的下外边距，并夹在可视区内。
+        /// </summary>
+        private void UpdateNavDivider()
+        {
+            if (_navDivider == null)
+            {
+                return;
+            }
+
+            ScrollViewer view = _activePageView;
+            if (view == null || view.Visibility != Visibility.Visible)
+            {
+                _navDivider.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            StackPanel body = view.Content as StackPanel;
+            if (body == null)
+            {
+                _navDivider.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            if (body.Children.Count == 0 || view.ViewportHeight <= 0)
+            {
+                _navDivider.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            double offset = view.VerticalOffset;
+            // 卡片范围 = 首张卡片上沿 ~ 末张卡片下沿。
+            // 页面的 StackPanel 会被拉伸到整个视口高度（比卡片实际占位高得多），
+            // 所以末端只能按子项实际高度累加，不能用 body.ActualHeight。
+            double top = body.Margin.Top - offset;
+            double contentHeight = 0;
+            foreach (UIElement child in body.Children)
+            {
+                FrameworkElement element = child as FrameworkElement;
+                if (element != null)
+                {
+                    contentHeight += element.ActualHeight + element.Margin.Top + element.Margin.Bottom;
+                }
+            }
+            if (contentHeight <= 0)
+            {
+                contentHeight = body.ActualHeight;
+            }
+            // 收尾还要再扣掉卡片内边距那点余量：面板是半透明的，线如果多拖出去一截，
+            // 就会从玻璃底下透出来，看着像一条横穿卡片的竖线（用户反馈的正是这个）。
+            // 14 = NewCard 的 Padding.Bottom，让线的末端正好落在卡片下沿。
+            double lastMargin = 14;
+            if (body.Children.Count > 0)
+            {
+                FrameworkElement lastCard = body.Children[body.Children.Count - 1] as FrameworkElement;
+                if (lastCard != null)
+                {
+                    lastMargin += lastCard.Margin.Bottom;
+                }
+            }
+            double bottom = top + contentHeight - lastMargin;
+
+            double viewportTop = 0;
+            double viewportBottom = view.ViewportHeight;
+
+            if (top < viewportTop)
+            {
+                top = viewportTop;
+            }
+            if (bottom > viewportBottom)
+            {
+                bottom = viewportBottom;
+            }
+            if (bottom - top < 1)
+            {
+                _navDivider.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            _navDivider.Visibility = Visibility.Visible;
+            _navDivider.Height = bottom - top;
+            _navDivider.VerticalAlignment = VerticalAlignment.Top;
+            _navDivider.Margin = new Thickness(NavWidth, top, 0, 0);
         }
 
         /// <summary>取消或直接关窗时把预览还原成保存前的配置，避免界面与 config.json 不一致。</summary>
