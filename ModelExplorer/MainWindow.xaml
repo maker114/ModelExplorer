@@ -27,9 +27,9 @@
     <SolidColorBrush x:Key="MutedBrush" Color="#B0B0B0" />
     <SolidColorBrush x:Key="AccentBrush" Color="#F5C518" />
     <SolidColorBrush x:Key="AccentHoverBrush" Color="#FFD75E" />
-    <SolidColorBrush x:Key="PartBrush" Color="#E0D3C6" />
-    <SolidColorBrush x:Key="AssemblyBrush" Color="#BBCD9E" />
-    <SolidColorBrush x:Key="StlBrush" Color="#9A8DBC" />
+    <SolidColorBrush x:Key="PartBrush" Color="#ECEBDC" />
+    <SolidColorBrush x:Key="AssemblyBrush" Color="#DAD8B1" />
+    <SolidColorBrush x:Key="StlBrush" Color="#CECB8B" />
     <SolidColorBrush x:Key="SuccessBrush" Color="#4CC38A" />
     <SolidColorBrush x:Key="ErrorBrush" Color="#FF6B6B" />
     <SolidColorBrush x:Key="CodeBrush" Color="#0A0A0A" />

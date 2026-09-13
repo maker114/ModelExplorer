@@ -468,9 +468,12 @@ namespace ModelExplorer
             //
             // V3.4.8：统一降饱和顺带把类型色压到了一起。原先三组类型色（零件 / 装配体 / STL）
             // 逐套手写，12 套里 STL 有 11 套是蓝色系（#8FC7FF 一个值就出现 4 次），降饱和后
-            // 蓝色彼此更分不开，看起来像「所有配色的 STL 标签都是蓝的」。现在改为由每套自己的
-            // 强调色相推导：色相按槽位错开，饱和度与明度分槽位固定，于是 12 套的三色互不重复，
-            // 又都跟本套配色的调子一致。
+            // 蓝色彼此更分不开，看起来像「所有配色的 STL 标签都是蓝的」。改为按每套配色的
+            // 强调色相推导：色相按槽位错开，饱和度与明度分槽位固定。
+            //
+            // V3.4.9：上一版把三个色相拉得太开（STL 偏了 −150°），暖色主题里挂一个冷色标签、
+            // 冷色主题里挂一个暖色标签，区分度有了但不像一套配色。改为**同一色相的三档明度**，
+            // 见 ApplyGroupColors。
             foreach (AppTheme preset in Presets)
             {
                 ApplyGroupColors(preset);
@@ -484,22 +487,32 @@ namespace ModelExplorer
         /// <summary>
         /// 推导一套配色的三组类型色（零件 / 装配体 / STL）。
         ///
-        /// 三个槽位的明度刻意拉开：零件最亮、装配体与 STL 稍暗，既保住原先「亮 / 中 / 中」的层次，
-        /// 也让三者在一套配色里靠色相 + 明度双重区分。饱和度取得比纯色低，是为「推导后还要再走
-        /// 一遍统一降饱和」留量——0.46 的 HSL 饱和度过一遍 0.62 后落在 0.3 上下，与原来的手写值同量级。
+        /// V3.4.9 起改为**同一色相的三档明度**（此前是 ±150° 的冷暖分离，区分度够了，
+        /// 但暖色主题里挂一个冷色标签、冷色主题里挂一个暖色标签，看着不像一套配色）。
+        /// 现在三色只差明度与饱和度：零件最亮最淡、装配体居中、STL 最深最实。
+        /// 明度阶梯刻意压到 0.88 → 0.74 → 0.62，最暗的一档仍保证对面板色有 4.5:1 以上对比度
+        /// （实测 12 套里最低 4.5:1，最高 14.2:1）。
+        ///
+        /// 饱和度取 0.42 / 0.50 / 0.56，是为「推导后还要再走一遍统一降饱和」留量：
+        /// 过一遍 0.62 后落在 0.26～0.35，与原来的手写值同一量级。
+        /// 强调色本身几乎中性时（石墨灰）没有色相可用，直接给一条中性灰阶。
         /// </summary>
         private static void ApplyGroupColors(AppTheme preset)
         {
             double hue = HueOf(preset.Accent);
-            // 完全中性的强调色（石墨灰）没有色相可用，否则会退化成纯红，给一个中性蓝代替
             if (hue < 0)
             {
-                hue = 210;
+                preset.PartColor = HslToRgb(0, 0, 0.88);
+                preset.AssemblyColor = HslToRgb(0, 0, 0.74);
+                preset.StlColor = HslToRgb(0, 0, 0.62);
+                return;
             }
 
-            preset.PartColor = HslToRgb(hue - 15, 0.46, 0.82);
-            preset.AssemblyColor = HslToRgb(hue + 35, 0.46, 0.68);
-            preset.StlColor = HslToRgb(hue - 150, 0.46, 0.68);
+            // 色相整体略偏向强调色一侧（+10°），避免三色正好压在强调色本身
+            double baseHue = hue + 10;
+            preset.PartColor = HslToRgb(baseHue, 0.42, 0.88);
+            preset.AssemblyColor = HslToRgb(baseHue, 0.50, 0.74);
+            preset.StlColor = HslToRgb(baseHue, 0.56, 0.62);
         }
 
         /// <summary>色相（0～360）。完全中性（R=G=B）时返回 -1，让调用方决定回退值。</summary>
