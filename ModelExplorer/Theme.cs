@@ -42,7 +42,6 @@ namespace ModelExplorer
         private Brush _panelActiveBrush;
         private Brush _opaquePanelBrush;
         private Brush _opaquePanelActiveBrush;
-        private Brush _popupBrush;
         private Brush _borderBrush;
         private Brush _textBrush;
         private Brush _mutedBrush;
@@ -70,7 +69,6 @@ namespace ModelExplorer
         public Brush SidebarBrush { get { EnsureBrushes(); return _sidebarBrush; } }
         public Brush PanelBrush { get { EnsureBrushes(); return _panelBrush; } }
         public Brush PanelActiveBrush { get { EnsureBrushes(); return _panelActiveBrush; } }
-        public Brush PopupBrush { get { EnsureBrushes(); return _popupBrush; } }
         public Brush BorderBrush { get { EnsureBrushes(); return _borderBrush; } }
         public Brush TextBrush { get { EnsureBrushes(); return _textBrush; } }
         public Brush MutedBrush { get { EnsureBrushes(); return _mutedBrush; } }
@@ -91,15 +89,6 @@ namespace ModelExplorer
 
         /// <summary>不透明面板色（悬停 / 表头态）。</summary>
         public Brush OpaquePanelActiveBrush { get { EnsureBrushes(); return _opaquePanelActiveBrush; } }
-
-        /// <summary>
-        /// 下拉弹窗底色。弹窗是独立的顶层窗口，背后就是主界面本身（不是极光层），
-        /// 半透明会直接透出下面的文字，因此始终不透明。
-        /// </summary>
-        public Color PopupColor
-        {
-            get { return Panel; }
-        }
 
         /// <summary>窗口底层的不透明底色。毛玻璃必须画在它之上：分层窗口一旦整体半透明，
         /// 就会直接透出桌面或下层窗口，压在上面的文字必然不可读。</summary>
@@ -147,7 +136,6 @@ namespace ModelExplorer
             // 列表与下拉菜单要的是「不透出背景」，与透明度滑杆无关
             _opaquePanelBrush = MakeBrush(Panel);
             _opaquePanelActiveBrush = MakeBrush(PanelActive);
-            _popupBrush = MakeBrush(Panel);
 
             if (_glassOpacity <= 0)
             {
@@ -209,6 +197,32 @@ namespace ModelExplorer
         {
             byte luma = (byte)((color.R * 299 + color.G * 587 + color.B * 114) / 1000);
             return Color.FromRgb(luma, luma, luma);
+        }
+
+        /// <summary>降饱和：把颜色按 keep 比例留在原位、其余向等亮度灰靠拢（keep=1 原样，0 全灰）。</summary>
+        public static Color Soft(Color color, double keep)
+        {
+            return Blend(ToGray(color), color, keep);
+        }
+
+        /// <summary>把整套配色的饱和度按同一比例压下来，见 <see cref="ThemeManager"/> 的 SoftnessRatio。</summary>
+        public void Soften(double keep)
+        {
+            Bg = Soft(Bg, keep);
+            Sidebar = Soft(Sidebar, keep);
+            Panel = Soft(Panel, keep);
+            PanelActive = Soft(PanelActive, keep);
+            Border = Soft(Border, keep);
+            Text = Soft(Text, keep);
+            Muted = Soft(Muted, keep);
+            Accent = Soft(Accent, keep);
+            AccentHover = Soft(AccentHover, keep);
+            PartColor = Soft(PartColor, keep);
+            AssemblyColor = Soft(AssemblyColor, keep);
+            StlColor = Soft(StlColor, keep);
+            Success = Soft(Success, keep);
+            Error = Soft(Error, keep);
+            Code = Soft(Code, keep);
         }
 
         public static Color WithAlpha(Color color, double alpha)
@@ -474,7 +488,18 @@ namespace ModelExplorer
             });
 
             Current = Presets[0];
+
+            // V3.4.2：统一降饱和。原来的强调色（熔岩红 #FF5C5C 之类）压在深色界面上很跳，
+            // 与参考的低饱和风格不符；这里对每套预设的**所有**颜色做同一比例的降饱和，
+            // 源值仍保留原始饱和度，只调 SoftnessRatio 一个常数就能整体收紧或放松。
+            foreach (AppTheme preset in Presets)
+            {
+                preset.Soften(SoftnessRatio);
+            }
         }
+
+        /// <summary>降饱和时保留的饱和度比例：1 = 原样，0 = 完全灰。V3.4.2 定为 0.62。</summary>
+        private const double SoftnessRatio = 0.62;
 
         public static void Apply(string name)
         {
@@ -722,45 +747,6 @@ namespace ModelExplorer
             return (ControlTemplate)XamlReader.Parse(xaml);
         }
 
-        public static ControlTemplate RoundedComboBoxTemplate()
-        {
-            // 弹窗底色写死成字面量而不是模板绑定：ComboBox.Background 是半透明的玻璃画刷，
-            // 弹窗窗口背后没有极光层、只有主界面，沿用它会直接透出底下的文字。
-            string popup = HexA(ThemeManager.Current.PopupColor);
-            string xaml =
-                "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +
-                " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='ComboBox'>" +
-                "<Grid>" +
-                "<ToggleButton x:Name='ToggleButton' Focusable='False' ClickMode='Press'" +
-                " Background='{TemplateBinding Background}' Foreground='{TemplateBinding Foreground}'" +
-                " BorderBrush='{TemplateBinding BorderBrush}' Padding='{TemplateBinding Padding}'" +
-                " IsChecked='{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}'" +
-                " Content='{TemplateBinding SelectionBoxItem}' ContentTemplate='{TemplateBinding SelectionBoxItemTemplate}'>" +
-                "<ToggleButton.Template>" +
-                "<ControlTemplate TargetType='ToggleButton'>" +
-                "<Border x:Name='bd' Background='{TemplateBinding Background}'" +
-                " BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='{TemplateBinding BorderThickness}'" +
-                " CornerRadius='8' Padding='{TemplateBinding Padding}'>" +
-                "<Grid>" +
-                "<Grid.ColumnDefinitions><ColumnDefinition Width='*'/><ColumnDefinition Width='Auto'/></Grid.ColumnDefinitions>" +
-                "<ContentPresenter Content='{TemplateBinding Content}' VerticalAlignment='Center'/>" +
-                "<Path Grid.Column='1' Data='M 0,0 L 8,8 L 16,0' Stroke='{TemplateBinding Foreground}'" +
-                " StrokeThickness='2' StrokeStartLineCap='Round' StrokeEndLineCap='Round' Width='14' Height='10'" +
-                " Stretch='Fill' Margin='8,0,4,0' VerticalAlignment='Center'/>" +
-                "</Grid></Border></ControlTemplate>" +
-                "</ToggleButton.Template></ToggleButton>" +
-                "<Popup x:Name='PART_Popup' Placement='Bottom' AllowsTransparency='True' Focusable='False'" +
-                " IsOpen='{TemplateBinding IsDropDownOpen}' PopupAnimation='Slide'>" +
-                "<Border Background='" + popup + "' BorderBrush='{TemplateBinding BorderBrush}'" +
-                " BorderThickness='0' CornerRadius='8' MinWidth='280'" +
-                " MaxHeight='{TemplateBinding MaxDropDownHeight}' Padding='4'>" +
-                "<ScrollViewer VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled' Background='Transparent'>" +
-                "<ItemsPresenter/>" +
-                "</ScrollViewer></Border></Popup>" +
-                "</Grid></ControlTemplate>";
-            return (ControlTemplate)XamlReader.Parse(xaml);
-        }
-
         public static ControlTemplate RoundedCheckBoxTemplate()
         {
             string accent = Hex(ThemeManager.Current.Accent);
@@ -864,6 +850,78 @@ namespace ModelExplorer
                 "</Trigger>" +
                 "</ControlTemplate.Triggers></ControlTemplate>";
             return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
+        /// <summary>
+        /// 设置窗左侧分类项：整行圆角块，选中态靠**明度**（面板色填充）而不是色相区分，
+        /// 与参考的低饱和风格一致。图标与文字颜色由界面代码在选中/取消时切换——
+        /// 放在模板触发器里会被控件构造时赋的本地值盖掉（见 SegmentTemplate 的注释）。
+        /// </summary>
+        public static ControlTemplate NavItemTemplate()
+        {
+            string hover = HexA(AppTheme.WithAlpha(ThemeManager.Current.PanelActive, 0.55));
+            string active = Hex(ThemeManager.Current.PanelActive);
+            string xaml =
+                "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +
+                " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='RadioButton'>" +
+                "<Border x:Name='bd' CornerRadius='9' Background='Transparent' Padding='0,9'>" +
+                "<ContentPresenter VerticalAlignment='Center'/>" +
+                "</Border>" +
+                "<ControlTemplate.Triggers>" +
+                "<Trigger Property='IsMouseOver' Value='True'>" +
+                "<Setter TargetName='bd' Property='Background' Value='" + hover + "'/>" +
+                "</Trigger>" +
+                "<Trigger Property='IsChecked' Value='True'>" +
+                "<Setter TargetName='bd' Property='Background' Value='" + active + "'/>" +
+                "</Trigger>" +
+                "</ControlTemplate.Triggers></ControlTemplate>";
+            return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
+        /// <summary>
+        /// 配色预设色板：左侧一个色点 + 名称，选中时描一圈强调色边（对应参考图里的「强调色」网格）。
+        /// </summary>
+        public static ControlTemplate SwatchTemplate()
+        {
+            string ring = Hex(ThemeManager.Current.Accent);
+            string hover = HexA(AppTheme.WithAlpha(ThemeManager.Current.PanelActive, 0.6));
+            string xaml =
+                "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +
+                " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='RadioButton'>" +
+                "<Border x:Name='bd' CornerRadius='10' Background='Transparent'" +
+                " BorderBrush='Transparent' BorderThickness='1' Padding='10,8'>" +
+                "<ContentPresenter VerticalAlignment='Center'/>" +
+                "</Border>" +
+                "<ControlTemplate.Triggers>" +
+                "<Trigger Property='IsMouseOver' Value='True'>" +
+                "<Setter TargetName='bd' Property='Background' Value='" + hover + "'/>" +
+                "</Trigger>" +
+                "<Trigger Property='IsChecked' Value='True'>" +
+                "<Setter TargetName='bd' Property='Background' Value='" + hover + "'/>" +
+                "<Setter TargetName='bd' Property='BorderBrush' Value='" + ring + "'/>" +
+                "</Trigger>" +
+                "</ControlTemplate.Triggers></ControlTemplate>";
+            return (ControlTemplate)XamlReader.Parse(xaml);
+        }
+
+        /// <summary>设置窗用的小线性图标：统一 16×16、圆头圆角描边，颜色跟随传入画刷。</summary>
+        public static Path IconPath(string data, double size, Brush stroke, double thickness = 1.6)
+        {
+            return new Path
+            {
+                Data = Geometry.Parse(data),
+                Stroke = stroke,
+                StrokeThickness = thickness,
+                StrokeStartLineCap = PenLineCap.Round,
+                StrokeEndLineCap = PenLineCap.Round,
+                StrokeLineJoin = PenLineJoin.Round,
+                Width = size,
+                Height = size,
+                Stretch = Stretch.Uniform,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                IsHitTestVisible = false
+            };
         }
 
         private static string Hex(Color color)
