@@ -160,13 +160,16 @@ namespace ModelExplorer
             {
                 // 面板填充 = 1 - 透明度；侧栏比面板更实一点，否则压在壁纸上的正文会发飘
                 double alpha = 1 - _glassOpacity / 100.0;
-                // 玻璃面板的填充色要比原色更亮一点：近黑底上「更暗的半透明」看起来和背景没区别，
-                // 略微向白靠才像一层浮起来的磨砂玻璃。
-                _sidebarBrush = MakeGlassBrush(Blend(Sidebar, Colors.White, 0.05), alpha + 0.06);
-                _panelBrush = MakeGlassBrush(Blend(Panel, Colors.White, 0.09), alpha);
-                // 悬停 / 选中态是压在玻璃面板上的小色块，用纯色半透明即可，不需要再做渐变
-                _panelActiveBrush = MakeBrush(WithAlpha(PanelActive, alpha + 0.16));
-                _borderBrush = MakeBrush(WithAlpha(Blend(Border, Colors.White, 0.18), 1 - alpha * 0.7));
+                // 玻璃材质是**无色**的：只保留原色的明度、去掉色相。
+                // 否则熔岩红这类主题会把整片侧栏染成红色半透明，压在壁纸上像蒙了一层色纸；
+                // 磨砂玻璃本身不吸色，主题色只该出现在强调色、文字与状态色上。
+                // 原色略向白靠一点：近黑底上「更暗的半透明」看起来和背景没区别。
+                _sidebarBrush = MakeGlassBrush(Blend(ToGray(Sidebar), Colors.White, 0.05), alpha + 0.06);
+                _panelBrush = MakeGlassBrush(Blend(ToGray(Panel), Colors.White, 0.09), alpha);
+                // 悬停 / 选中态是压在玻璃面板上的小色块，同样去色相
+                _panelActiveBrush = MakeBrush(WithAlpha(ToGray(PanelActive), alpha + 0.16));
+                // 描边也去色相：带色的一圈边会把「红色玻璃」的观感重新带回来
+                _borderBrush = MakeBrush(WithAlpha(Blend(ToGray(Border), Colors.White, 0.18), 1 - alpha * 0.7));
             }
 
             _brushOpacity = _glassOpacity;
@@ -196,6 +199,16 @@ namespace ModelExplorer
                 return 1;
             }
             return alpha;
+        }
+
+        /// <summary>
+        /// 去色相、保留明度（Rec.601 亮度）。玻璃材质用它做填充：
+        /// 同一套主题里「侧栏比面板暗、悬停比面板亮」的明度关系保持不变，但不再带主题色相。
+        /// </summary>
+        public static Color ToGray(Color color)
+        {
+            byte luma = (byte)((color.R * 299 + color.G * 587 + color.B * 114) / 1000);
+            return Color.FromRgb(luma, luma, luma);
         }
 
         public static Color WithAlpha(Color color, double alpha)
@@ -342,6 +355,122 @@ namespace ModelExplorer
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x12, 0x0F, 0x0A)
+            });
+            // V3.5.0 新增六套：玻璃材质改成无色之后，预设之间的差异主要体现在强调色与状态色上，
+            // 所以这里按色相铺开（含一套完全中性的石墨灰，配壁纸最百搭）。
+            Presets.Add(new AppTheme
+            {
+                Name = "石墨灰",
+                Bg = Color.FromRgb(0x12, 0x12, 0x12),
+                Sidebar = Color.FromRgb(0x18, 0x18, 0x18),
+                Panel = Color.FromRgb(0x1F, 0x1F, 0x1F),
+                PanelActive = Color.FromRgb(0x2C, 0x2C, 0x2C),
+                Border = Color.FromRgb(0x3C, 0x3C, 0x3C),
+                Text = Color.FromRgb(0xF2, 0xF2, 0xF2),
+                Muted = Color.FromRgb(0xAB, 0xAB, 0xAB),
+                Accent = Color.FromRgb(0xD8, 0xD8, 0xD8),
+                AccentHover = Color.FromRgb(0xF5, 0xF5, 0xF5),
+                PartColor = Color.FromRgb(0xE6, 0xE6, 0xE6),
+                AssemblyColor = Color.FromRgb(0xC9, 0xC9, 0xC9),
+                StlColor = Color.FromRgb(0x9C, 0xB0, 0xC4),
+                Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
+                Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
+                Code = Color.FromRgb(0x0A, 0x0A, 0x0A)
+            });
+            Presets.Add(new AppTheme
+            {
+                Name = "深海青",
+                Bg = Color.FromRgb(0x08, 0x17, 0x1A),
+                Sidebar = Color.FromRgb(0x0B, 0x20, 0x24),
+                Panel = Color.FromRgb(0x10, 0x2A, 0x2F),
+                PanelActive = Color.FromRgb(0x17, 0x39, 0x3F),
+                Border = Color.FromRgb(0x24, 0x50, 0x55),
+                Text = Color.FromRgb(0xE4, 0xF7, 0xF6),
+                Muted = Color.FromRgb(0x8F, 0xB6, 0xB6),
+                Accent = Color.FromRgb(0x2F, 0xC7, 0xC0),
+                AccentHover = Color.FromRgb(0x63, 0xDE, 0xD8),
+                PartColor = Color.FromRgb(0x8F, 0xE3, 0xDE),
+                AssemblyColor = Color.FromRgb(0xA8, 0xE6, 0xA1),
+                StlColor = Color.FromRgb(0x7F, 0xC4, 0xFF),
+                Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
+                Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
+                Code = Color.FromRgb(0x05, 0x10, 0x0F)
+            });
+            Presets.Add(new AppTheme
+            {
+                Name = "樱花粉",
+                Bg = Color.FromRgb(0x1A, 0x10, 0x14),
+                Sidebar = Color.FromRgb(0x24, 0x14, 0x19),
+                Panel = Color.FromRgb(0x2F, 0x1A, 0x20),
+                PanelActive = Color.FromRgb(0x40, 0x24, 0x2C),
+                Border = Color.FromRgb(0x5C, 0x37, 0x42),
+                Text = Color.FromRgb(0xFF, 0xEA, 0xF0),
+                Muted = Color.FromRgb(0xD3, 0xA4, 0xB0),
+                Accent = Color.FromRgb(0xFF, 0x7B, 0xA8),
+                AccentHover = Color.FromRgb(0xFF, 0xA0, 0xC2),
+                PartColor = Color.FromRgb(0xFF, 0xC2, 0xD6),
+                AssemblyColor = Color.FromRgb(0xFF, 0xD9, 0xA8),
+                StlColor = Color.FromRgb(0x9F, 0xB6, 0xFF),
+                Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
+                Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
+                Code = Color.FromRgb(0x12, 0x0A, 0x0D)
+            });
+            Presets.Add(new AppTheme
+            {
+                Name = "靛蓝",
+                Bg = Color.FromRgb(0x0D, 0x10, 0x24),
+                Sidebar = Color.FromRgb(0x12, 0x16, 0x36),
+                Panel = Color.FromRgb(0x17, 0x1D, 0x46),
+                PanelActive = Color.FromRgb(0x21, 0x2A, 0x5E),
+                Border = Color.FromRgb(0x33, 0x3E, 0x7A),
+                Text = Color.FromRgb(0xE8, 0xEC, 0xFF),
+                Muted = Color.FromRgb(0x9B, 0xA4, 0xD0),
+                Accent = Color.FromRgb(0x6E, 0x7B, 0xFF),
+                AccentHover = Color.FromRgb(0x93, 0xA0, 0xFF),
+                PartColor = Color.FromRgb(0xB7, 0xC0, 0xFF),
+                AssemblyColor = Color.FromRgb(0x7F, 0xE0, 0xD0),
+                StlColor = Color.FromRgb(0x8F, 0xB8, 0xFF),
+                Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
+                Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
+                Code = Color.FromRgb(0x08, 0x0A, 0x18)
+            });
+            Presets.Add(new AppTheme
+            {
+                Name = "赤陶橙",
+                Bg = Color.FromRgb(0x1A, 0x12, 0x10),
+                Sidebar = Color.FromRgb(0x24, 0x19, 0x16),
+                Panel = Color.FromRgb(0x2F, 0x21, 0x1C),
+                PanelActive = Color.FromRgb(0x40, 0x2D, 0x26),
+                Border = Color.FromRgb(0x5E, 0x43, 0x3A),
+                Text = Color.FromRgb(0xFF, 0xED, 0xE4),
+                Muted = Color.FromRgb(0xD0, 0xA8, 0x95),
+                Accent = Color.FromRgb(0xE8, 0x76, 0x3C),
+                AccentHover = Color.FromRgb(0xFF, 0x95, 0x58),
+                PartColor = Color.FromRgb(0xFF, 0xB9, 0x8A),
+                AssemblyColor = Color.FromRgb(0xFF, 0xD0, 0x8A),
+                StlColor = Color.FromRgb(0x8F, 0xC7, 0xFF),
+                Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
+                Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
+                Code = Color.FromRgb(0x12, 0x0C, 0x09)
+            });
+            Presets.Add(new AppTheme
+            {
+                Name = "苔原绿",
+                Bg = Color.FromRgb(0x10, 0x14, 0x10),
+                Sidebar = Color.FromRgb(0x16, 0x1C, 0x15),
+                Panel = Color.FromRgb(0x1C, 0x24, 0x1B),
+                PanelActive = Color.FromRgb(0x28, 0x32, 0x25),
+                Border = Color.FromRgb(0x3C, 0x4A, 0x38),
+                Text = Color.FromRgb(0xED, 0xF5, 0xE9),
+                Muted = Color.FromRgb(0xA9, 0xBC, 0xA0),
+                Accent = Color.FromRgb(0x8F, 0xBF, 0x4A),
+                AccentHover = Color.FromRgb(0xAF, 0xD9, 0x6C),
+                PartColor = Color.FromRgb(0xC6, 0xE3, 0x9A),
+                AssemblyColor = Color.FromRgb(0xE3, 0xD0, 0x8A),
+                StlColor = Color.FromRgb(0x8F, 0xC7, 0xFF),
+                Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
+                Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
+                Code = Color.FromRgb(0x0A, 0x0E, 0x09)
             });
 
             Current = Presets[0];
