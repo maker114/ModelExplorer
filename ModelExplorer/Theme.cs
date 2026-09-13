@@ -356,7 +356,7 @@ namespace ModelExplorer
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
                 Code = Color.FromRgb(0x12, 0x0F, 0x0A)
             });
-            // V3.5.0 新增六套：玻璃材质改成无色之后，预设之间的差异主要体现在强调色与状态色上，
+            // V3.4.1 新增六套：玻璃材质改成无色之后，预设之间的差异主要体现在强调色与状态色上，
             // 所以这里按色相铺开（含一套完全中性的石墨灰，配壁纸最百搭）。
             Presets.Add(new AppTheme
             {

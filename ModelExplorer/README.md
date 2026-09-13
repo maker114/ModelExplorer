@@ -7,7 +7,7 @@ WPF 版 SolidWorks STL / Bambu Studio 3MF 工作台。
 > 分类整理过的变更清单见仓库根目录的 [`CHANGELOG.md`](../CHANGELOG.md)；
 > 这里保留写给用户的说明——每个版本改了什么、为什么这么改。
 
-### V3.5.0
+### V3.4.1
 
 #### 毛玻璃
 
@@ -26,7 +26,7 @@ WPF 版 SolidWorks STL / Bambu Studio 3MF 工作台。
 
 #### 版本
 
-- 主程序 / Core / CLI / 测试更新至 3.5.0；SolidWorks 插件本次无改动。
+- 主程序 / Core / CLI / 测试更新至 3.4.1；SolidWorks 插件本次无改动。
 
 ### V3.4.0
 
