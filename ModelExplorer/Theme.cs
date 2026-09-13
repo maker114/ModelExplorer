@@ -829,7 +829,7 @@ namespace ModelExplorer
         public static ControlTemplate SegmentTemplate()
         {
             string accent = Hex(ThemeManager.Current.Accent);
-            string panel = Hex(ThemeManager.Current.PanelActive);
+            string panel = Hex(AppTheme.ToGray(ThemeManager.Current.PanelActive));
             string border = Hex(ThemeManager.Current.Border);
             string dark = "#151515";
             string xaml =
@@ -859,8 +859,8 @@ namespace ModelExplorer
         /// </summary>
         public static ControlTemplate NavItemTemplate()
         {
-            string hover = HexA(AppTheme.WithAlpha(ThemeManager.Current.PanelActive, 0.55));
-            string active = Hex(ThemeManager.Current.PanelActive);
+            string hover = HexA(AppTheme.WithAlpha(AppTheme.ToGray(ThemeManager.Current.PanelActive), 0.55));
+            string active = Hex(AppTheme.ToGray(ThemeManager.Current.PanelActive));
             string xaml =
                 "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +
                 " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='RadioButton'>" +
@@ -886,8 +886,11 @@ namespace ModelExplorer
         public static ControlTemplate SwatchTemplate()
         {
             string ring = Hex(ThemeManager.Current.Accent);
-            string fill = HexA(AppTheme.WithAlpha(ThemeManager.Current.PanelActive, 0.75));
-            string hover = Hex(ThemeManager.Current.PanelActive);
+            // 色板底、药丸底、导航底都用去色相的面板色：与「玻璃材质无色」同一口径，
+            // 主题色只出现在描边、选中态与文字上，底块本身不参与染色
+            Color neutral = AppTheme.ToGray(ThemeManager.Current.PanelActive);
+            string fill = HexA(AppTheme.WithAlpha(neutral, 0.75));
+            string hover = Hex(neutral);
             string edge = HexA(AppTheme.WithAlpha(ThemeManager.Current.Border, 0.9));
             string xaml =
                 "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +

@@ -64,6 +64,8 @@ namespace ModelExplorer
         private Slider _backgroundDarkenSlider;
         private TextBlock _backgroundDarkenValue;
         private readonly List<NavVisual> _navVisuals = new List<NavVisual>();
+        private readonly List<Page> _pages = new List<Page>();
+        private bool _suppressThemePreview;
 
         public AppConfig Result { get; private set; }
 
@@ -143,18 +145,18 @@ namespace ModelExplorer
             Grid.SetColumn(pages, 1);
             body.Children.Add(pages);
 
-            List<Page> pageList = new List<Page>();
-            pageList.Add(NewPage(nav, pages, Icons.Sliders, "外观", theme));
-            pageList.Add(NewPage(nav, pages, Icons.Window, "外部程序", theme));
-            pageList.Add(NewPage(nav, pages, Icons.Download, "导出", theme));
-            pageList.Add(NewPage(nav, pages, Icons.Folder, "整理", theme));
+            _pages.Clear();
+            _pages.Add(NewPage(nav, pages, Icons.Sliders, "外观", theme));
+            _pages.Add(NewPage(nav, pages, Icons.Window, "外部程序", theme));
+            _pages.Add(NewPage(nav, pages, Icons.Download, "导出", theme));
+            _pages.Add(NewPage(nav, pages, Icons.Folder, "整理", theme));
 
-            BuildAppearancePage(pageList[0].Body, theme);
-            BuildProgramsPage(pageList[1].Body, theme);
-            BuildExportPage(pageList[2].Body, theme);
-            BuildOrganizePage(pageList[3].Body, theme);
+            BuildAppearancePage(_pages[0].Body, theme);
+            BuildProgramsPage(_pages[1].Body, theme);
+            BuildExportPage(_pages[2].Body, theme);
+            BuildOrganizePage(_pages[3].Body, theme);
 
-            pageList[0].NavButton.IsChecked = true;
+            _pages[0].NavButton.IsChecked = true;
 
             StackPanel footer = new StackPanel
             {
@@ -232,7 +234,7 @@ namespace ModelExplorer
             };
 
             nav.Children.Add(button);
-            return new Page { NavButton = button, Body = body };
+            return new Page { NavButton = button, Body = body, View = view };
         }
 
         // ------------------------------------------------------------------ 各分类页
@@ -671,6 +673,10 @@ namespace ModelExplorer
             ChoiceGroup group = new ChoiceGroup { Values = values };
             group.Buttons = new RadioButton[values.Count];
 
+            // 组名必须**一组一个**：写在循环里会变成每个按钮一个组名，
+            // WPF 的互斥只在同名组内生效，那样就变成可以多选（曾因此出现三个同时选中）。
+            string groupName = "Choice" + Guid.NewGuid().ToString("N");
+
             Grid grid = new Grid { Margin = new Thickness(0, title == null ? 2 : 0, 0, 0) };
             for (int i = 0; i < columns; i++)
             {
@@ -689,14 +695,29 @@ namespace ModelExplorer
                 RadioButton button = new RadioButton
                 {
                     Content = swatch ? BuildSwatchContent(values[i], theme) : BuildPillContent(values[i], theme),
-                    GroupName = "Choice" + Guid.NewGuid().ToString("N"),
+                    GroupName = groupName,
                     Foreground = theme.TextBrush,
                     Cursor = Cursors.Hand,
                     Template = swatch ? UiFactory.SwatchTemplate() : UiFactory.SegmentTemplate(),
                     Margin = new Thickness(column == 0 ? 0 : 5, 0, 0, row == rows - 1 ? 0 : 8),
                     Tag = i
                 };
-                button.Checked += delegate { /* 互斥由 GroupName 保证，取值时现算 */ };
+                if (swatch)
+                {
+                    // 配色要**实时应用**：选中即换肤，不必先保存
+                    button.Checked += delegate
+                    {
+                        if (!_uiReady || _suppressThemePreview)
+                        {
+                            return;
+                        }
+                        string name = values[(int)button.Tag];
+                        if (name != ThemeManager.Current.Name)
+                        {
+                            ApplyThemeLive(name);
+                        }
+                    };
+                }
                 Grid.SetColumn(button, column);
                 Grid.SetRow(button, row);
                 grid.Children.Add(button);
@@ -762,6 +783,151 @@ namespace ModelExplorer
             return names;
         }
 
+        // ------------------------------------------------------------------ 实时换肤
+
+        /// <summary>
+        /// 换配色时重建整个界面。
+        ///
+        /// 为什么必须重建：面板色、文字色是构造时赋的本地值，而药丸 / 色板 / 滑杆 / 开关的
+        /// 模板更是把颜色写成了创建时的字面量——不重建，模板里的强调色不会跟着换。
+        /// 重建前把当前所有控件的值抓成一份快照，重建后再灌回去，预览状态不丢。
+        /// </summary>
+        private void ApplyThemeLive(string name)
+        {
+            PreviewState state = CaptureState();
+            state.Theme = name;
+
+            ThemeManager.Apply(name);
+            ThemeManager.ApplyGlass(_glassSwitch.IsChecked == true, (int)Math.Round(_glassOpacitySlider.Value));
+            RefreshAppScrollBarResources();
+            Glass.Configure(CurrentBackdropSettings());
+            Glass.Invalidate();
+
+            RebuildUi(state);
+        }
+
+        /// <summary>滚动条用的是应用级资源（主窗口负责设置），换肤时一并刷新，免得还是旧配色。</summary>
+        private static void RefreshAppScrollBarResources()
+        {
+            Application app = Application.Current;
+            if (app == null)
+            {
+                return;
+            }
+
+            AppTheme theme = ThemeManager.Current;
+            app.Resources["ScrollBarTrackBrush"] = theme.CodeBrush;
+            app.Resources["ScrollBarThumbBrush"] = theme.BorderBrush;
+            app.Resources["ScrollBarThumbHoverBrush"] = theme.PanelActiveBrush;
+            app.Resources["ScrollBarThumbPressedBrush"] = theme.AccentBrush;
+        }
+
+        private void RebuildUi(PreviewState state)
+        {
+            _uiReady = false;
+            _navVisuals.Clear();
+            BuildUi();
+            _uiReady = true;
+            ApplyState(state);
+        }
+
+        private PreviewState CaptureState()
+        {
+            PreviewState state = new PreviewState();
+            state.NavIndex = 0;
+            for (int i = 0; i < _pages.Count; i++)
+            {
+                if (_pages[i].NavButton.IsChecked == true)
+                {
+                    state.NavIndex = i;
+                    state.PageScroll = _pages[i].View.VerticalOffset;
+                    break;
+                }
+            }
+
+            state.Theme = _themeChoices.SelectedValue;
+            state.FontSize = (int)Math.Round(_fontSizeSlider.Value);
+            state.GlassOn = _glassSwitch.IsChecked == true;
+            state.GlassBlur = _glassBlurSlider.Value;
+            state.GlassOpacity = _glassOpacitySlider.Value;
+            state.BackgroundImage = _backgroundImage;
+            state.BackgroundFit = SelectedFitIndex();
+            state.BackgroundDarken = _backgroundDarkenSlider.Value;
+            state.BinaryStl = _binaryStlSwitch.IsChecked == true;
+            state.KeepHistory = _keepHistorySwitch.IsChecked == true;
+            state.OpenBambu = _openBambuSwitch.IsChecked == true;
+            state.OrganizeByFolder = _organizeByFolderSwitch.IsChecked == true;
+            state.BambuPath = _bambuPathBox.Text;
+            state.SolidWorksPath = _solidWorksPathBox.Text;
+            state.StlUnits = _stlUnitsChoices.SelectedValue;
+            state.StlQuality = _stlQualityChoices.SelectedValue;
+            return state;
+        }
+
+        private void ApplyState(PreviewState state)
+        {
+            _suppressThemePreview = true;
+            try
+            {
+                _themeChoices.SelectedValue = state.Theme;
+                _fontSizeSlider.Value = state.FontSize;
+                _glassSwitch.IsChecked = state.GlassOn;
+                _glassBlurSlider.Value = state.GlassBlur;
+                _glassOpacitySlider.Value = state.GlassOpacity;
+                _backgroundImage = state.BackgroundImage ?? "";
+                _backgroundFitButtons[state.BackgroundFit].IsChecked = true;
+                _backgroundDarkenSlider.Value = state.BackgroundDarken;
+                _binaryStlSwitch.IsChecked = state.BinaryStl;
+                _keepHistorySwitch.IsChecked = state.KeepHistory;
+                _openBambuSwitch.IsChecked = state.OpenBambu;
+                _organizeByFolderSwitch.IsChecked = state.OrganizeByFolder;
+                _bambuPathBox.Text = state.BambuPath;
+                _solidWorksPathBox.Text = state.SolidWorksPath;
+                _stlUnitsChoices.SelectedValue = state.StlUnits;
+                _stlQualityChoices.SelectedValue = state.StlQuality;
+                _backgroundClearButton.IsEnabled = !string.IsNullOrEmpty(_backgroundImage);
+                UpdateBackgroundPathText(ThemeManager.Current);
+            }
+            finally
+            {
+                _suppressThemePreview = false;
+            }
+
+            int index = state.NavIndex;
+            if (index < 0 || index >= _pages.Count)
+            {
+                index = 0;
+            }
+            _pages[index].NavButton.IsChecked = true;
+            if (state.PageScroll > 0)
+            {
+                _pages[index].View.ScrollToVerticalOffset(state.PageScroll);
+            }
+        }
+
+        /// <summary>切换配色前的界面快照，重建后照它恢复。</summary>
+        private sealed class PreviewState
+        {
+            public int NavIndex { get; set; }
+            public double PageScroll { get; set; }
+            public string Theme { get; set; }
+            public int FontSize { get; set; }
+            public bool GlassOn { get; set; }
+            public double GlassBlur { get; set; }
+            public double GlassOpacity { get; set; }
+            public string BackgroundImage { get; set; }
+            public int BackgroundFit { get; set; }
+            public double BackgroundDarken { get; set; }
+            public bool BinaryStl { get; set; }
+            public bool KeepHistory { get; set; }
+            public bool OpenBambu { get; set; }
+            public bool OrganizeByFolder { get; set; }
+            public string BambuPath { get; set; }
+            public string SolidWorksPath { get; set; }
+            public string StlUnits { get; set; }
+            public string StlQuality { get; set; }
+        }
+
         // ------------------------------------------------------------------ 预览与保存
 
         /// <summary>毛玻璃两个滑杆的实时预览：改的是全局主题画刷与背景层，不写配置。</summary>
@@ -814,7 +980,10 @@ namespace ModelExplorer
             base.OnClosed(e);
             if (!_backgroundSaved)
             {
+                // 实时换肤可能已经把主题改掉了，取消时要连主题一起还原
+                ThemeManager.Apply(_source.Theme);
                 ThemeManager.ApplyGlass(_source.UseGlass, _source.GlassOpacityValue);
+                RefreshAppScrollBarResources();
                 Glass.Configure(_source);
                 Glass.Invalidate();
             }
@@ -1054,6 +1223,7 @@ namespace ModelExplorer
         {
             public RadioButton NavButton { get; set; }
             public StackPanel Body { get; set; }
+            public ScrollViewer View { get; set; }
         }
 
         private sealed class Card
