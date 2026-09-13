@@ -92,7 +92,7 @@ namespace ModelExplorer
         public string BambuPath { get; set; }
         public string SolidWorksPath { get; set; }
 
-        public const string DefaultTheme = "终末地配色";
+        public const string DefaultTheme = "丹砂";
         public const int DefaultFontSize = 12;
         public const string DefaultStlUnits = "mm";
         public const string DefaultStlQuality = "Fine";

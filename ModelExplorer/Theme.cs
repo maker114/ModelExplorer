@@ -225,6 +225,73 @@ namespace ModelExplorer
             Code = Soft(Code, keep);
         }
 
+        /// <summary>
+        /// 统一的降饱和比例（1 = 原样，0 = 全灰）。源码里的色值是**原始饱和度**，
+        /// 界面上一律用按这个比例降过饱和的那份；想整体收紧或放松只改这一个常数。
+        /// </summary>
+        public const double SoftnessRatio = 0.62;
+
+        // ---- 原始色与降饱和色 ----
+        //
+        // 为什么留两份：色板预览里的圆点用的是各预设的强调色画刷，若直接把预设对象降饱和，
+        // 源码里刚写好的鲜艳色值就被就地改掉了——「测试版看着鲜艳、正式版发闷」正是这么来的
+        // （测试版只降 0.85，正式版套了 0.62）。现在源码始终保存原始色值，
+        // 界面取用降饱和后的那份（RefreshDerivedColors 负责按 SoftnessRatio 重算）。
+        private Color _rawAccent, _rawAccentHover, _rawBg, _rawSidebar, _rawPanel, _rawPanelActive;
+        private Color _rawBorder, _rawText, _rawMuted, _rawPart, _rawAssembly, _rawStl;
+        private Color _rawSuccess, _rawError, _rawCode;
+
+        /// <summary>
+        /// 按 <see cref="SoftnessRatio"/> 重算界面用的降饱和色，源码色值保持不变。
+        ///
+        /// **连压两遍是刻意的**：选这 12 套方案时，测试版走的是「构造时压一遍 0.62 +
+        /// 套用测试数据时再压一遍 0.62」，观感就是那个两遍的结果（丹砂强调色 #FC4646 → #AD6868）。
+        /// 这里复刻同一个数值，正式版才与当时看到的颜色逐位一致；
+        /// 想改整体浓淡就调 <see cref="SoftnessRatio"/>，但改完等于换了一套观感。
+        /// </summary>
+        public void RefreshDerivedColors()
+        {
+            Bg = _rawBg;
+            Sidebar = _rawSidebar;
+            Panel = _rawPanel;
+            PanelActive = _rawPanelActive;
+            Border = _rawBorder;
+            Text = _rawText;
+            Muted = _rawMuted;
+            Accent = _rawAccent;
+            AccentHover = _rawAccentHover;
+            PartColor = _rawPart;
+            AssemblyColor = _rawAssembly;
+            StlColor = _rawStl;
+            Success = _rawSuccess;
+            Error = _rawError;
+            Code = _rawCode;
+            Soften(SoftnessRatio);
+            Soften(SoftnessRatio);
+            // 画刷是惰性缓存（按透明度做键），改完颜色要显式失效
+            _brushOpacity = -1;
+        }
+
+        /// <summary>把当前色值记为原始色值（构造结束后、派生类型色之后调一次）。</summary>
+        public void CaptureRawColors()
+        {
+            _rawBg = Bg;
+            _rawSidebar = Sidebar;
+            _rawPanel = Panel;
+            _rawPanelActive = PanelActive;
+            _rawBorder = Border;
+            _rawText = Text;
+            _rawMuted = Muted;
+            _rawAccent = Accent;
+            _rawAccentHover = AccentHover;
+            _rawPart = PartColor;
+            _rawAssembly = AssemblyColor;
+            _rawStl = StlColor;
+            _rawSuccess = Success;
+            _rawError = Error;
+            _rawCode = Code;
+        }
+
         public static Color WithAlpha(Color color, double alpha)
         {
             return Color.FromArgb((byte)Math.Round(ClampAlpha(alpha) * 255), color.R, color.G, color.B);
@@ -256,215 +323,218 @@ namespace ModelExplorer
         static ThemeManager()
         {
             Presets = new List<AppTheme>();
+            // V3.5.0：配色预设改为取自 520设计网「色彩搭配」(https://www.sj520.cn/tools/peise/) 的公开方案。
+            // 该页 520 组四色方案里筛掉整体偏亮的，按强调色色相在色谱上均匀取 12 组
+            // （红/橙/琥珀/黄绿/绿/青绿/青/天蓝/蓝/紫/品红/玫红），色名沿用中文传统色。
+            // 原站每组是平铺四色、没有主次，这里取其中最饱和的一色当强调色，
+            // 最暗一色压暗成底 / 侧栏 / 面板 / 描边阶梯（底色只带约 24% 饱和度，避免整片染色）。
             AppTheme preset1 = new AppTheme
             {
-                Name = "终末地配色",
-                Bg = Color.FromRgb(0x10, 0x10, 0x10),
-                Sidebar = Color.FromRgb(0x16, 0x16, 0x16),
-                Panel = Color.FromRgb(0x1C, 0x1C, 0x1C),
-                PanelActive = Color.FromRgb(0x2A, 0x2A, 0x2A),
-                Border = Color.FromRgb(0x3A, 0x3A, 0x3A),
-                Text = Color.FromRgb(0xFF, 0xFF, 0xFF),
-                Muted = Color.FromRgb(0xB0, 0xB0, 0xB0),
-                Accent = Color.FromRgb(0xF5, 0xC5, 0x18),
-                AccentHover = Color.FromRgb(0xFF, 0xD7, 0x5E),
+                Name = "丹砂",
+                Bg = Color.FromRgb(0x0F, 0x13, 0x18),
+                Sidebar = Color.FromRgb(0x15, 0x1D, 0x23),
+                Panel = Color.FromRgb(0x1C, 0x25, 0x2D),
+                PanelActive = Color.FromRgb(0x29, 0x36, 0x42),
+                Border = Color.FromRgb(0x40, 0x56, 0x68),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0xFC, 0x46, 0x46),
+                AccentHover = Color.FromRgb(0xFD, 0x64, 0x64),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x0A, 0x0A, 0x0A)
+                Code = Color.FromRgb(0x09, 0x0C, 0x0E)
             };
-            Presets.Add(preset1);
             AppTheme preset2 = new AppTheme
             {
-                Name = "暗夜蓝",
-                Bg = Color.FromRgb(0x0E, 0x17, 0x26),
-                Sidebar = Color.FromRgb(0x11, 0x1E, 0x30),
-                Panel = Color.FromRgb(0x15, 0x26, 0x3C),
-                PanelActive = Color.FromRgb(0x1D, 0x32, 0x4C),
-                Border = Color.FromRgb(0x27, 0x41, 0x5E),
-                Text = Color.FromRgb(0xE7, 0xF1, 0xFF),
-                Muted = Color.FromRgb(0x93, 0xA9, 0xC4),
-                Accent = Color.FromRgb(0x3B, 0x9E, 0xFF),
-                AccentHover = Color.FromRgb(0x6D, 0xB9, 0xFF),
+                Name = "柿子橙",
+                Bg = Color.FromRgb(0x13, 0x0F, 0x18),
+                Sidebar = Color.FromRgb(0x1B, 0x15, 0x23),
+                Panel = Color.FromRgb(0x24, 0x1C, 0x2D),
+                PanelActive = Color.FromRgb(0x34, 0x29, 0x42),
+                Border = Color.FromRgb(0x52, 0x40, 0x68),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0xFF, 0x6C, 0x00),
+                AccentHover = Color.FromRgb(0xFF, 0x84, 0x29),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x0A, 0x10, 0x18)
+                Code = Color.FromRgb(0x0B, 0x09, 0x0E)
             };
-            Presets.Add(preset2);
             AppTheme preset3 = new AppTheme
             {
-                Name = "翡翠绿",
-                Bg = Color.FromRgb(0x0D, 0x18, 0x15),
-                Sidebar = Color.FromRgb(0x10, 0x22, 0x1D),
-                Panel = Color.FromRgb(0x15, 0x2B, 0x24),
-                PanelActive = Color.FromRgb(0x1D, 0x3A, 0x30),
-                Border = Color.FromRgb(0x2A, 0x4B, 0x3E),
-                Text = Color.FromRgb(0xE7, 0xF7, 0xF0),
-                Muted = Color.FromRgb(0x8F, 0xB8, 0xA9),
-                Accent = Color.FromRgb(0x2F, 0xB5, 0x7D),
-                AccentHover = Color.FromRgb(0x5E, 0xD2, 0x9D),
+                Name = "金珀",
+                Bg = Color.FromRgb(0x0F, 0x14, 0x18),
+                Sidebar = Color.FromRgb(0x15, 0x1E, 0x23),
+                Panel = Color.FromRgb(0x1C, 0x27, 0x2D),
+                PanelActive = Color.FromRgb(0x29, 0x39, 0x42),
+                Border = Color.FromRgb(0x40, 0x5A, 0x68),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0xFF, 0xD7, 0x00),
+                AccentHover = Color.FromRgb(0xFF, 0xDD, 0x29),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x08, 0x12, 0x10)
+                Code = Color.FromRgb(0x09, 0x0C, 0x0E)
             };
-            Presets.Add(preset3);
             AppTheme preset4 = new AppTheme
             {
-                Name = "紫罗兰",
-                Bg = Color.FromRgb(0x16, 0x11, 0x22),
-                Sidebar = Color.FromRgb(0x1C, 0x15, 0x30),
-                Panel = Color.FromRgb(0x25, 0x1B, 0x3D),
-                PanelActive = Color.FromRgb(0x32, 0x26, 0x4F),
-                Border = Color.FromRgb(0x46, 0x37, 0x66),
-                Text = Color.FromRgb(0xF0, 0xEA, 0xFF),
-                Muted = Color.FromRgb(0xA9, 0x9B, 0xC7),
-                Accent = Color.FromRgb(0xA7, 0x8B, 0xFA),
-                AccentHover = Color.FromRgb(0xC3, 0xAE, 0xFC),
+                Name = "柳芽",
+                Bg = Color.FromRgb(0x0F, 0x18, 0x15),
+                Sidebar = Color.FromRgb(0x15, 0x23, 0x1F),
+                Panel = Color.FromRgb(0x1C, 0x2D, 0x28),
+                PanelActive = Color.FromRgb(0x29, 0x42, 0x3B),
+                Border = Color.FromRgb(0x40, 0x68, 0x5D),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0xB5, 0xFF, 0x7D),
+                AccentHover = Color.FromRgb(0xCC, 0xFF, 0xA6),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x0F, 0x0B, 0x17)
+                Code = Color.FromRgb(0x09, 0x0E, 0x0D)
             };
-            Presets.Add(preset4);
             AppTheme preset5 = new AppTheme
             {
-                Name = "熔岩红",
-                Bg = Color.FromRgb(0x1A, 0x0F, 0x10),
-                Sidebar = Color.FromRgb(0x24, 0x13, 0x16),
-                Panel = Color.FromRgb(0x2F, 0x19, 0x1C),
-                PanelActive = Color.FromRgb(0x40, 0x22, 0x26),
-                Border = Color.FromRgb(0x5A, 0x34, 0x38),
-                Text = Color.FromRgb(0xFF, 0xED, 0xED),
-                Muted = Color.FromRgb(0xD0, 0xA2, 0xA6),
-                Accent = Color.FromRgb(0xFF, 0x5C, 0x5C),
-                AccentHover = Color.FromRgb(0xFF, 0x8A, 0x8A),
+                Name = "翠微",
+                Bg = Color.FromRgb(0x0F, 0x16, 0x17),
+                Sidebar = Color.FromRgb(0x16, 0x21, 0x22),
+                Panel = Color.FromRgb(0x1D, 0x2A, 0x2C),
+                PanelActive = Color.FromRgb(0x2A, 0x3E, 0x41),
+                Border = Color.FromRgb(0x42, 0x62, 0x66),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0x4E, 0xF0, 0x37),
+                AccentHover = Color.FromRgb(0x70, 0xF3, 0x5D),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x13, 0x09, 0x0A)
+                Code = Color.FromRgb(0x09, 0x0D, 0x0E)
             };
-            Presets.Add(preset5);
             AppTheme preset6 = new AppTheme
             {
-                Name = "暖阳金",
-                Bg = Color.FromRgb(0x19, 0x16, 0x10),
-                Sidebar = Color.FromRgb(0x24, 0x1F, 0x16),
-                Panel = Color.FromRgb(0x2F, 0x29, 0x1D),
-                PanelActive = Color.FromRgb(0x40, 0x38, 0x2A),
-                Border = Color.FromRgb(0x59, 0x4D, 0x39),
-                Text = Color.FromRgb(0xFF, 0xF5, 0xE6),
-                Muted = Color.FromRgb(0xD0, 0xBC, 0x9E),
-                Accent = Color.FromRgb(0xF5, 0xC4, 0x51),
-                AccentHover = Color.FromRgb(0xFF, 0xD9, 0x7A),
+                Name = "竹青",
+                Bg = Color.FromRgb(0x0F, 0x13, 0x17),
+                Sidebar = Color.FromRgb(0x16, 0x1C, 0x22),
+                Panel = Color.FromRgb(0x1D, 0x24, 0x2C),
+                PanelActive = Color.FromRgb(0x2B, 0x35, 0x40),
+                Border = Color.FromRgb(0x43, 0x54, 0x65),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0x45, 0xEB, 0xA5),
+                AccentHover = Color.FromRgb(0x6A, 0xEF, 0xB7),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x12, 0x0F, 0x0A)
+                Code = Color.FromRgb(0x09, 0x0B, 0x0E)
             };
-            Presets.Add(preset6);
             AppTheme preset7 = new AppTheme
             {
-                Name = "石墨灰",
-                Bg = Color.FromRgb(0x12, 0x12, 0x12),
-                Sidebar = Color.FromRgb(0x18, 0x18, 0x18),
-                Panel = Color.FromRgb(0x1F, 0x1F, 0x1F),
-                PanelActive = Color.FromRgb(0x2C, 0x2C, 0x2C),
-                Border = Color.FromRgb(0x3C, 0x3C, 0x3C),
-                Text = Color.FromRgb(0xF2, 0xF2, 0xF2),
-                Muted = Color.FromRgb(0xAB, 0xAB, 0xAB),
-                Accent = Color.FromRgb(0xD8, 0xD8, 0xD8),
-                AccentHover = Color.FromRgb(0xF5, 0xF5, 0xF5),
+                Name = "碧落",
+                Bg = Color.FromRgb(0x0F, 0x18, 0x17),
+                Sidebar = Color.FromRgb(0x15, 0x23, 0x22),
+                Panel = Color.FromRgb(0x1C, 0x2D, 0x2C),
+                PanelActive = Color.FromRgb(0x29, 0x42, 0x40),
+                Border = Color.FromRgb(0x40, 0x68, 0x65),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0x14, 0xFF, 0xEC),
+                AccentHover = Color.FromRgb(0x3D, 0xFF, 0xEF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x0A, 0x0A, 0x0A)
+                Code = Color.FromRgb(0x09, 0x0E, 0x0E)
             };
-            Presets.Add(preset7);
             AppTheme preset8 = new AppTheme
             {
-                Name = "深海青",
-                Bg = Color.FromRgb(0x08, 0x17, 0x1A),
-                Sidebar = Color.FromRgb(0x0B, 0x20, 0x24),
-                Panel = Color.FromRgb(0x10, 0x2A, 0x2F),
-                PanelActive = Color.FromRgb(0x17, 0x39, 0x3F),
-                Border = Color.FromRgb(0x24, 0x50, 0x55),
-                Text = Color.FromRgb(0xE4, 0xF7, 0xF6),
-                Muted = Color.FromRgb(0x8F, 0xB6, 0xB6),
-                Accent = Color.FromRgb(0x2F, 0xC7, 0xC0),
-                AccentHover = Color.FromRgb(0x63, 0xDE, 0xD8),
+                Name = "晴山",
+                Bg = Color.FromRgb(0x0F, 0x13, 0x18),
+                Sidebar = Color.FromRgb(0x15, 0x1C, 0x23),
+                Panel = Color.FromRgb(0x1C, 0x25, 0x2D),
+                PanelActive = Color.FromRgb(0x29, 0x36, 0x42),
+                Border = Color.FromRgb(0x40, 0x55, 0x68),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0x8D, 0xC6, 0xFF),
+                AccentHover = Color.FromRgb(0xB6, 0xDA, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x05, 0x10, 0x0F)
+                Code = Color.FromRgb(0x09, 0x0C, 0x0E)
             };
-            Presets.Add(preset8);
             AppTheme preset9 = new AppTheme
             {
-                Name = "樱花粉",
-                Bg = Color.FromRgb(0x1A, 0x10, 0x14),
-                Sidebar = Color.FromRgb(0x24, 0x14, 0x19),
-                Panel = Color.FromRgb(0x2F, 0x1A, 0x20),
-                PanelActive = Color.FromRgb(0x40, 0x24, 0x2C),
-                Border = Color.FromRgb(0x5C, 0x37, 0x42),
-                Text = Color.FromRgb(0xFF, 0xEA, 0xF0),
-                Muted = Color.FromRgb(0xD3, 0xA4, 0xB0),
-                Accent = Color.FromRgb(0xFF, 0x7B, 0xA8),
-                AccentHover = Color.FromRgb(0xFF, 0xA0, 0xC2),
+                Name = "玄青",
+                Bg = Color.FromRgb(0x11, 0x0F, 0x17),
+                Sidebar = Color.FromRgb(0x19, 0x17, 0x22),
+                Panel = Color.FromRgb(0x21, 0x1D, 0x2C),
+                PanelActive = Color.FromRgb(0x30, 0x2B, 0x40),
+                Border = Color.FromRgb(0x4B, 0x44, 0x65),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0x7C, 0x78, 0xEF),
+                AccentHover = Color.FromRgb(0x85, 0x82, 0xF0),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x12, 0x0A, 0x0D)
+                Code = Color.FromRgb(0x0A, 0x09, 0x0E)
             };
-            Presets.Add(preset9);
             AppTheme preset10 = new AppTheme
             {
-                Name = "靛蓝",
-                Bg = Color.FromRgb(0x0D, 0x10, 0x24),
-                Sidebar = Color.FromRgb(0x12, 0x16, 0x36),
-                Panel = Color.FromRgb(0x17, 0x1D, 0x46),
-                PanelActive = Color.FromRgb(0x21, 0x2A, 0x5E),
-                Border = Color.FromRgb(0x33, 0x3E, 0x7A),
-                Text = Color.FromRgb(0xE8, 0xEC, 0xFF),
-                Muted = Color.FromRgb(0x9B, 0xA4, 0xD0),
-                Accent = Color.FromRgb(0x6E, 0x7B, 0xFF),
-                AccentHover = Color.FromRgb(0x93, 0xA0, 0xFF),
+                Name = "紫棠",
+                Bg = Color.FromRgb(0x13, 0x0F, 0x18),
+                Sidebar = Color.FromRgb(0x1C, 0x15, 0x23),
+                Panel = Color.FromRgb(0x24, 0x1C, 0x2D),
+                PanelActive = Color.FromRgb(0x35, 0x29, 0x42),
+                Border = Color.FromRgb(0x54, 0x40, 0x68),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0xEF, 0xB1, 0xFF),
+                AccentHover = Color.FromRgb(0xF7, 0xDA, 0xFF),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x08, 0x0A, 0x18)
+                Code = Color.FromRgb(0x0B, 0x09, 0x0E)
             };
-            Presets.Add(preset10);
             AppTheme preset11 = new AppTheme
             {
-                Name = "赤陶橙",
-                Bg = Color.FromRgb(0x1A, 0x12, 0x10),
-                Sidebar = Color.FromRgb(0x24, 0x19, 0x16),
-                Panel = Color.FromRgb(0x2F, 0x21, 0x1C),
-                PanelActive = Color.FromRgb(0x40, 0x2D, 0x26),
-                Border = Color.FromRgb(0x5E, 0x43, 0x3A),
-                Text = Color.FromRgb(0xFF, 0xED, 0xE4),
-                Muted = Color.FromRgb(0xD0, 0xA8, 0x95),
-                Accent = Color.FromRgb(0xE8, 0x76, 0x3C),
-                AccentHover = Color.FromRgb(0xFF, 0x95, 0x58),
+                Name = "品红",
+                Bg = Color.FromRgb(0x17, 0x10, 0x16),
+                Sidebar = Color.FromRgb(0x21, 0x17, 0x20),
+                Panel = Color.FromRgb(0x2B, 0x1E, 0x2A),
+                PanelActive = Color.FromRgb(0x3F, 0x2C, 0x3E),
+                Border = Color.FromRgb(0x63, 0x45, 0x61),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0xD8, 0x4A, 0xE2),
+                AccentHover = Color.FromRgb(0xD6, 0x41, 0xE1),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x12, 0x0C, 0x09)
+                Code = Color.FromRgb(0x0E, 0x09, 0x0D)
             };
-            Presets.Add(preset11);
             AppTheme preset12 = new AppTheme
             {
-                Name = "苔原绿",
-                Bg = Color.FromRgb(0x10, 0x14, 0x10),
-                Sidebar = Color.FromRgb(0x16, 0x1C, 0x15),
-                Panel = Color.FromRgb(0x1C, 0x24, 0x1B),
-                PanelActive = Color.FromRgb(0x28, 0x32, 0x25),
-                Border = Color.FromRgb(0x3C, 0x4A, 0x38),
-                Text = Color.FromRgb(0xED, 0xF5, 0xE9),
-                Muted = Color.FromRgb(0xA9, 0xBC, 0xA0),
-                Accent = Color.FromRgb(0x8F, 0xBF, 0x4A),
-                AccentHover = Color.FromRgb(0xAF, 0xD9, 0x6C),
+                Name = "胭脂",
+                Bg = Color.FromRgb(0x12, 0x0F, 0x18),
+                Sidebar = Color.FromRgb(0x1B, 0x15, 0x23),
+                Panel = Color.FromRgb(0x23, 0x1C, 0x2D),
+                PanelActive = Color.FromRgb(0x33, 0x29, 0x42),
+                Border = Color.FromRgb(0x50, 0x40, 0x68),
+                Text = Color.FromRgb(0xF0, 0xF0, 0xF2),
+                Muted = Color.FromRgb(0xA8, 0xA8, 0xB0),
+                Accent = Color.FromRgb(0xFB, 0x2A, 0x94),
+                AccentHover = Color.FromRgb(0xFB, 0x16, 0x89),
                 Success = Color.FromRgb(0x4C, 0xC3, 0x8A),
                 Error = Color.FromRgb(0xFF, 0x6B, 0x6B),
-                Code = Color.FromRgb(0x0A, 0x0E, 0x09)
+                Code = Color.FromRgb(0x0B, 0x09, 0x0E)
             };
+            Presets.Add(preset1);
+            Presets.Add(preset2);
+            Presets.Add(preset3);
+            Presets.Add(preset4);
+            Presets.Add(preset5);
+            Presets.Add(preset6);
+            Presets.Add(preset7);
+            Presets.Add(preset8);
+            Presets.Add(preset9);
+            Presets.Add(preset10);
+            Presets.Add(preset11);
             Presets.Add(preset12);
             Current = Presets[0];
 
-            // V3.4.2：统一降饱和。原来的强调色（熔岩红 #FF5C5C 之类）压在深色界面上很跳，
-            // 与参考的低饱和风格不符；这里对每套预设的**所有**颜色做同一比例的降饱和，
-            // 源值仍保留原始饱和度，只调 SoftnessRatio 一个常数就能整体收紧或放松。
+            // V3.4.2：统一降饱和（原来的强调色压在深色界面上很跳，与参考的低饱和风格不符）。
             //
             // V3.4.8：统一降饱和顺带把类型色压到了一起。原先三组类型色（零件 / 装配体 / STL）
             // 逐套手写，12 套里 STL 有 11 套是蓝色系（#8FC7FF 一个值就出现 4 次），降饱和后
@@ -474,15 +544,16 @@ namespace ModelExplorer
             // V3.4.9：上一版把三个色相拉得太开（STL 偏了 −150°），暖色主题里挂一个冷色标签、
             // 冷色主题里挂一个暖色标签，区分度有了但不像一套配色。改为**同一色相的三档明度**，
             // 见 ApplyGroupColors。
+            //
+            // V3.5.0：降饱和不再就地改预设对象，源码色值保持原始饱和度，
+            // 界面取用 RefreshDerivedColors 算出来的那份（见那一带的注释）。
             foreach (AppTheme preset in Presets)
             {
                 ApplyGroupColors(preset);
-                preset.Soften(SoftnessRatio);
+                preset.CaptureRawColors();
+                preset.RefreshDerivedColors();
             }
         }
-
-        /// <summary>降饱和时保留的饱和度比例：1 = 原样，0 = 完全灰。V3.4.2 定为 0.62。</summary>
-        private const double SoftnessRatio = 0.62;
 
         /// <summary>
         /// 推导一套配色的三组类型色（零件 / 装配体 / STL）。
@@ -599,6 +670,9 @@ namespace ModelExplorer
             // 只换配色时保留当前透明度：主题与毛玻璃是两个独立的设置项
             int opacity = Current == null ? 0 : Current.GlassOpacity;
             Current = theme ?? Presets[0];
+            // 每次启用都按当前 SoftnessRatio 重算一遍界面色（源码色值始终是原始饱和度，
+            // 见 AppTheme.RefreshDerivedColors）
+            Current.RefreshDerivedColors();
             Current.SetGlassOpacity(opacity);
         }
 
