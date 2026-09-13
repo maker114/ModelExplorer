@@ -35,6 +35,7 @@ namespace ModelExplorer.Tests
             FolderStatisticsTests();
             PathHelpersTests();
             ConfigDefaultTests();
+            MainWindowIconTests();
 
             Console.WriteLine();
             Console.WriteLine("通过 " + _passed + " 项，失败 " + _failed + " 项。");
@@ -400,6 +401,70 @@ namespace ModelExplorer.Tests
             CheckEqual("没有 GlassBlur 时沿用 3.3.0 的壁纸模糊", 14, fromWallpaper.GlassBlurValue);
             AppConfig noImageNoBlur = serializer.Deserialize<AppConfig>("{\"BackgroundBlur\":14}");
             CheckEqual("没设背景图时不沿用壁纸模糊", 40, noImageNoBlur.GlassBlurValue);
+        }
+
+        // ---------------------------------------------------------------- 主界面图标
+
+        /// <summary>
+        /// V3.5.2：主界面的分区标题图标写在 XAML 里，没法直接引用 <see cref="AppIcons"/> 常量，
+        /// 所以这里逐条核对 XAML 里的 Data 与常量是否逐字一致——改了常量忘了改 XAML 就会失败，
+        /// 免得两处悄悄漂移成两个图标。找不到 XAML 文件时跳过（不误报失败）。
+        /// </summary>
+        private static void MainWindowIconTests()
+        {
+            // 从当前目录与测试程序集所在目录逐级向上找 ModelExplorer\MainWindow.xaml
+            List<string> roots = new List<string>();
+            roots.Add(Directory.GetCurrentDirectory());
+            roots.Add(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location));
+            string path = null;
+            foreach (string root in roots)
+            {
+                if (string.IsNullOrEmpty(root))
+                {
+                    continue;
+                }
+                DirectoryInfo dir = new DirectoryInfo(root);
+                for (int depth = 0; depth < 6 && dir != null; depth++)
+                {
+                    string candidate = Path.Combine(dir.FullName, @"ModelExplorer\MainWindow.xaml");
+                    if (File.Exists(candidate))
+                    {
+                        path = candidate;
+                        break;
+                    }
+                    dir = dir.Parent;
+                }
+                if (path != null)
+                {
+                    break;
+                }
+            }
+            if (path == null)
+            {
+                Console.WriteLine("  [跳过] 找不到 MainWindow.xaml，跳过图标一致性核对");
+                return;
+            }
+
+            string xaml = File.ReadAllText(path);
+            // 「选中模型」按反馈去掉了图标，只剩五个带图标的分区标题
+            string[] expected =
+            {
+                AppIcons.Folder, AppIcons.Stats, AppIcons.Sliders,
+                AppIcons.Rename, AppIcons.Log
+            };
+            string[] labels = { "工程目录", "统计", "STL/3MF文件整理", "工程名整理", "运行日志" };
+            string[] constants = { "Folder", "Stats", "Sliders", "Rename", "Log" };
+
+            for (int i = 0; i < expected.Length; i++)
+            {
+                bool present = xaml.Contains("Data=\"" + expected[i] + "\"");
+                CheckTrue("主界面「" + labels[i] + "」标题图标与 AppIcons." + constants[i] + " 常量一致", present);
+            }
+
+            // 设置窗的图标全部来自常量，这里只需确认常量本身没有空值
+            CheckTrue("设置窗图标常量非空", AppIcons.Sliders.Length > 0 && AppIcons.Droplet.Length > 0
+                && AppIcons.Image.Length > 0 && AppIcons.Letter.Length > 0 && AppIcons.Window.Length > 0
+                && AppIcons.Download.Length > 0 && AppIcons.Swap.Length > 0 && AppIcons.Folder.Length > 0);
         }
 
         // ---------------------------------------------------------------- 详细统计汇总

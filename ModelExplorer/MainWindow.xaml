@@ -53,6 +53,21 @@
       <Setter Property="FontWeight" Value="Bold" />
     </Style>
 
+    <!-- 分区标题的小图标：与设置窗同一套线性风格（16×16 视窗、圆头描边、跟随文字色）。
+         Data 与 Theme.cs 的 AppIcons 常量保持逐字一致，MainWindowIconTests 会核对，
+         改了常量忘了改这里会测试失败。 -->
+    <Style x:Key="SectionIconStyle" TargetType="Path">
+      <Setter Property="Stroke" Value="{DynamicResource TextBrush}" />
+      <Setter Property="StrokeThickness" Value="1.5" />
+      <Setter Property="StrokeStartLineCap" Value="Round" />
+      <Setter Property="StrokeEndLineCap" Value="Round" />
+      <Setter Property="StrokeLineJoin" Value="Round" />
+      <Setter Property="Width" Value="15" />
+      <Setter Property="Height" Value="15" />
+      <Setter Property="Stretch" Value="Uniform" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
     <Style x:Key="SidebarBoxStyle" TargetType="Border">
       <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
@@ -688,8 +703,13 @@
                         HorizontalScrollBarVisibility="Disabled"
                         PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
             <StackPanel Margin="16,18">
-              <TextBlock Text="工程目录"
-                         Style="{StaticResource SidebarSectionTitleStyle}" />
+              <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                <Path Style="{StaticResource SectionIconStyle}"
+                      Data="M 2.2,4.6 H 6.4 L 7.8,6.6 H 13.8 V 12.4 H 2.2 Z" />
+                <TextBlock Text="工程目录"
+                           Style="{StaticResource SidebarSectionTitleStyle}"
+                           Margin="8,0,0,0" />
+              </StackPanel>
               <Border Style="{StaticResource SidebarBoxStyle}">
                 <StackPanel>
                   <TextBlock x:Name="DirectoryText"
@@ -708,9 +728,13 @@
                 </StackPanel>
               </Border>
 
-              <TextBlock Text="统计"
-                         Style="{StaticResource SidebarSectionTitleStyle}"
-                         Margin="0,16,0,8" />
+              <StackPanel Orientation="Horizontal" Margin="0,16,0,8">
+                <Path Style="{StaticResource SectionIconStyle}"
+                      Data="M 2.4,13.2 V 9 M 6.4,13.2 V 5.4 M 10.4,13.2 V 7.6 M 13.8,13.2 V 3.6" />
+                <TextBlock Text="统计"
+                           Style="{StaticResource SidebarSectionTitleStyle}"
+                           Margin="8,0,0,0" />
+              </StackPanel>
               <Border Style="{StaticResource SidebarBoxStyle}">
                 <StackPanel Cursor="Hand" MouseLeftButtonDown="Stats_MouseLeftButtonDown">
                   <Grid>
@@ -751,9 +775,13 @@
                 </StackPanel>
               </Border>
 
-              <TextBlock Text="STL/3MF文件整理"
-                         Style="{StaticResource SidebarSectionTitleStyle}"
-                         Margin="0,16,0,8" />
+              <StackPanel Orientation="Horizontal" Margin="0,16,0,8">
+                <Path Style="{StaticResource SectionIconStyle}"
+                      Data="M 2,5 H 14 M 2,11 H 14 M 5.5,3.2 V 6.8 M 10.5,9.2 V 12.8" />
+                <TextBlock Text="STL/3MF文件整理"
+                           Style="{StaticResource SidebarSectionTitleStyle}"
+                           Margin="8,0,0,0" />
+              </StackPanel>
               <Border Style="{StaticResource SidebarBoxStyle}">
                 <StackPanel>
                   <!-- 「按文件夹整理」开关已移入设置窗口（V3.0.7）；
@@ -772,9 +800,13 @@
                 </StackPanel>
               </Border>
 
-              <TextBlock Text="工程名整理"
-                         Style="{StaticResource SidebarSectionTitleStyle}"
-                         Margin="0,16,0,8" />
+              <StackPanel Orientation="Horizontal" Margin="0,16,0,8">
+                <Path Style="{StaticResource SectionIconStyle}"
+                      Data="M 2.2,3.4 H 13.8 V 12.6 H 2.2 Z M 4.6,6.4 H 10.4 M 4.6,9.4 H 8" />
+                <TextBlock Text="工程名整理"
+                           Style="{StaticResource SidebarSectionTitleStyle}"
+                           Margin="8,0,0,0" />
+              </StackPanel>
               <Border Style="{StaticResource SidebarBoxStyle}">
                 <StackPanel>
                   <Button x:Name="CheckProjectNamesButton"
@@ -1047,10 +1079,14 @@
                     Margin="0,18,0,8"
                     IsEnabled="False"
                     Click="Export_Click" />
-            <TextBlock Grid.Row="5"
-                       Text="运行日志"
-                       Style="{StaticResource SectionTitleStyle}"
-                       Margin="0,18,0,6" />
+            <StackPanel Grid.Row="5" Orientation="Horizontal" Margin="0,18,0,6">
+              <Path Style="{StaticResource SectionIconStyle}"
+                    Data="M 3.4,2.4 H 9.6 L 12.6,5.4 V 13.6 H 3.4 Z M 9.4,2.6 V 5.6 H 12.4 M 5.6,8.4 H 10.4 M 5.6,11.2 H 8.8" />
+              <TextBlock Text="运行日志"
+                         Style="{StaticResource SectionTitleStyle}"
+                         VerticalAlignment="Center"
+                         Margin="8,0,0,0" />
+            </StackPanel>
             <TextBox x:Name="LogBox"
                      Grid.Row="6"
                      Background="{DynamicResource CodeBrush}"

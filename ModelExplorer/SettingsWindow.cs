@@ -139,10 +139,10 @@ namespace ModelExplorer
             body.Children.Add(pages);
 
             _pages.Clear();
-            _pages.Add(NewPage(nav, pages, Icons.Sliders, "外观", theme));
-            _pages.Add(NewPage(nav, pages, Icons.Window, "外部程序", theme));
-            _pages.Add(NewPage(nav, pages, Icons.Download, "导出", theme));
-            _pages.Add(NewPage(nav, pages, Icons.Folder, "整理", theme));
+            _pages.Add(NewPage(nav, pages, AppIcons.Sliders, "外观", theme));
+            _pages.Add(NewPage(nav, pages, AppIcons.Window, "外部程序", theme));
+            _pages.Add(NewPage(nav, pages, AppIcons.Download, "导出", theme));
+            _pages.Add(NewPage(nav, pages, AppIcons.Folder, "整理", theme));
 
             BuildAppearancePage(_pages[0].Body, theme);
             BuildProgramsPage(_pages[1].Body, theme);
@@ -235,7 +235,7 @@ namespace ModelExplorer
         /// <summary>外观：配色预设、毛玻璃、背景图、字体大小。</summary>
         private void BuildAppearancePage(StackPanel page, AppTheme theme)
         {
-            Card themeCard = NewCard(page, Icons.Sliders, "配色预设", theme);
+            Card themeCard = NewCard(page, AppIcons.Sliders, "配色预设", theme);
             _themeChoices = NewChoiceGroup(
                 themeCard.Body,
                 theme,
@@ -244,7 +244,7 @@ namespace ModelExplorer
                 _source.Theme,
                 true);
 
-            Card glassCard = NewCard(page, Icons.Droplet, "毛玻璃", theme);
+            Card glassCard = NewCard(page, AppIcons.Droplet, "毛玻璃", theme);
             _glassSwitch = new ToggleSwitch
             {
                 IsChecked = _source.UseGlass,
@@ -295,7 +295,7 @@ namespace ModelExplorer
 
             BuildBackgroundCard(page, theme);
 
-            Card fontCard = NewCard(page, Icons.Letter, "字体大小", theme);
+            Card fontCard = NewCard(page, AppIcons.Letter, "字体大小", theme);
             _fontSizeSlider = MakeSlider(9, 16);
             _fontSizeSlider.Value = _source.FontSize;
             _fontSizeValue = MakeValueLabel(theme);
@@ -311,12 +311,12 @@ namespace ModelExplorer
         /// <summary>外部程序：Bambu Studio 与 SolidWorks 的路径。</summary>
         private void BuildProgramsPage(StackPanel page, AppTheme theme)
         {
-            Card bambuCard = NewCard(page, Icons.Window, "Bambu Studio", theme);
+            Card bambuCard = NewCard(page, AppIcons.Window, "Bambu Studio", theme);
             AddHint(bambuCard.Body, "设置 bambu-studio.exe 的完整路径，适配不同电脑。", theme);
             _bambuPathBox = NewPathBox(_source.BambuPath, theme);
             AddPathRow(bambuCard.Body, _bambuPathBox, "浏览...", Browse_Click, theme);
 
-            Card solidWorksCard = NewCard(page, Icons.Window, "SolidWorks", theme);
+            Card solidWorksCard = NewCard(page, AppIcons.Window, "SolidWorks", theme);
             AddHint(solidWorksCard.Body, "设置 SLDWORKS.exe 的完整路径，用于 API 调用。", theme);
             _solidWorksPathBox = NewPathBox(_source.SolidWorksPath, theme);
             AddPathRow(solidWorksCard.Body, _solidWorksPathBox, "浏览...", BrowseSolidWorks_Click, theme);
@@ -325,7 +325,7 @@ namespace ModelExplorer
         /// <summary>导出：STL 导出参数与转换设置。</summary>
         private void BuildExportPage(StackPanel page, AppTheme theme)
         {
-            Card stlCard = NewCard(page, Icons.Download, "STL 导出", theme);
+            Card stlCard = NewCard(page, AppIcons.Download, "STL 导出", theme);
             AddHint(stlCard.Body, "与 SolidWorks 插件、命令行工具共用同一份配置。", theme);
 
             _binaryStlSwitch = new ToggleSwitch
@@ -354,7 +354,7 @@ namespace ModelExplorer
                 false,
                 "STL 质量");
 
-            Card convertCard = NewCard(page, Icons.Swap, "转换设置", theme);
+            Card convertCard = NewCard(page, AppIcons.Swap, "转换设置", theme);
             _keepHistorySwitch = new ToggleSwitch
             {
                 IsChecked = _source.KeepHistory,
@@ -377,7 +377,7 @@ namespace ModelExplorer
         /// <summary>整理：按文件夹整理。</summary>
         private void BuildOrganizePage(StackPanel page, AppTheme theme)
         {
-            Card card = NewCard(page, Icons.Folder, "文件整理", theme);
+            Card card = NewCard(page, AppIcons.Folder, "文件整理", theme);
             _organizeByFolderSwitch = new ToggleSwitch
             {
                 IsChecked = _source.OrganizeByFolder,
@@ -392,7 +392,7 @@ namespace ModelExplorer
         /// <summary>背景图卡片：选图 / 清除 / 适配 / 暗化。</summary>
         private void BuildBackgroundCard(StackPanel page, AppTheme theme)
         {
-            Card card = NewCard(page, Icons.Image, "背景图片", theme);
+            Card card = NewCard(page, AppIcons.Image, "背景图片", theme);
             _backgroundImage = _source.BackgroundImage ?? "";
 
             _backgroundPathText = new TextBlock
@@ -1202,18 +1202,6 @@ namespace ModelExplorer
             return button;
         }
 
-        /// <summary>设置窗用的线性图标（16×16 视窗，纯描边）。</summary>
-        private static class Icons
-        {
-            public const string Sliders = "M 2,5 H 14 M 2,11 H 14 M 5.5,3.2 V 6.8 M 10.5,9.2 V 12.8";
-            public const string Droplet = "M 8,1.9 C 8,1.9 3.5,7.4 3.5,10.2 A 4.5,4.5 0 0 0 12.5,10.2 C 12.5,7.4 8,1.9 8,1.9 Z";
-            public const string Image = "M 2.2,3.6 H 13.8 V 12.4 H 2.2 Z M 2.2,10 L 6,6.6 L 8.6,9 L 10.6,7.4 L 13.8,10.2";
-            public const string Letter = "M 3,13 L 6.4,3.4 L 9.8,13 M 4.4,9.6 H 8.4";
-            public const string Window = "M 2.2,3.6 H 13.8 V 12.4 H 2.2 Z M 2.2,6.6 H 13.8";
-            public const string Download = "M 8,2.2 V 9.8 M 4.6,6.6 L 8,10 L 11.4,6.6 M 2.6,13.4 H 13.4";
-            public const string Swap = "M 2.6,5.6 H 12 M 9.4,3.2 L 11.8,5.6 L 9.4,8 M 13.4,10.4 H 4 M 6.6,8 L 4.2,10.4 L 6.6,12.8";
-            public const string Folder = "M 2.2,4.6 H 6.4 L 7.8,6.6 H 13.8 V 12.4 H 2.2 Z";
-        }
 
         /// <summary>左侧导航项的三件套，用来在切换时统一改选中态颜色。</summary>
         private sealed class NavVisual
