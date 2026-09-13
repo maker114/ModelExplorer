@@ -181,9 +181,8 @@ namespace ModelExplorer
             // 那时背景图分区的控件还不存在
             _uiReady = true;
             // 布局还没跑，卡片高度此刻都是 0；排完版再量一次分隔线
-            Dispatcher.BeginInvoke(
-                new Action(UpdateNavDivider),
-                System.Windows.Threading.DispatcherPriority.Loaded);
+            Loaded += delegate { UpdateNavDivider(); };
+            SizeChanged += delegate { UpdateNavDivider(); };
         }
 
         /// <summary>建一个分类页：导航项 + 该页的滚动容器，导航切换时切可见性。</summary>
@@ -1005,12 +1004,13 @@ namespace ModelExplorer
         }
 
         /// <summary>
-        /// 让导航分隔线只覆盖当前页**可见的卡片范围**。
+        /// 让导航分隔线只覆盖当前页**卡片所占的范围**。
         ///
-        /// 分隔线此前是内容列里的一个拉伸元素，长度等于整个内容区的高度；卡片只有两张时，
-        /// 线会一路拖到窗口底部，看着像一条位置错误的竖线（用户反馈）。
-        /// 现在按活动页算：起点是页面上边距 + 首张卡片的上外边距 − 滚动偏移，
-        /// 终点是末张卡片的下外边距，并夹在可视区内。
+        /// 分隔线此前是内容列里一个拉伸元素，长度等于整个内容区的高度；卡片只有两张时，
+        /// 线会一路拖到窗口底边、勾出一道空档，而且面板是半透明的，多出来的那截还会从
+        /// 玻璃底下透出来，看着像一条横穿卡片的竖线（用户反馈）。
+        /// 现在按活动页算：起点是页面上边距（= 首张卡片上沿）− 滚动偏移，
+        /// 终点是「各卡片实际高度 + 末张卡片内边距」的累加，并夹在可视区内。
         /// </summary>
         private void UpdateNavDivider()
         {
@@ -1027,15 +1027,16 @@ namespace ModelExplorer
             }
 
             StackPanel body = view.Content as StackPanel;
-            if (body == null)
+            if (body == null || body.Children.Count == 0)
             {
                 _navDivider.Visibility = Visibility.Collapsed;
                 return;
             }
 
-            if (body.Children.Count == 0 || view.ViewportHeight <= 0)
+            // 这个回调两次都挂（Loaded 与 SizeChanged），可能先于排版跑；此时量不出高度，
+            // 保持现状、等下一次量，别留下一条按默认边距画出来的线
+            if (view.ViewportHeight <= 0)
             {
-                _navDivider.Visibility = Visibility.Collapsed;
                 return;
             }
 
