@@ -879,17 +879,21 @@ namespace ModelExplorer
         }
 
         /// <summary>
-        /// 配色预设色板：左侧一个色点 + 名称，选中时描一圈强调色边（对应参考图里的「强调色」网格）。
+        /// 配色预设色板：左侧一个色点 + 名称，**每一项都有可见的圆角选框**，
+        /// 选中的那一项再描一圈强调色边（对应参考图里的「强调色」网格）。
+        /// 未选中项也要有框：只有选中项带框时，其余项看起来像纯文字，不像可点的控件。
         /// </summary>
         public static ControlTemplate SwatchTemplate()
         {
             string ring = Hex(ThemeManager.Current.Accent);
-            string hover = HexA(AppTheme.WithAlpha(ThemeManager.Current.PanelActive, 0.6));
+            string fill = HexA(AppTheme.WithAlpha(ThemeManager.Current.PanelActive, 0.75));
+            string hover = Hex(ThemeManager.Current.PanelActive);
+            string edge = HexA(AppTheme.WithAlpha(ThemeManager.Current.Border, 0.9));
             string xaml =
                 "<ControlTemplate xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'" +
                 " xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' TargetType='RadioButton'>" +
-                "<Border x:Name='bd' CornerRadius='10' Background='Transparent'" +
-                " BorderBrush='Transparent' BorderThickness='1' Padding='10,8'>" +
+                "<Border x:Name='bd' CornerRadius='10' Background='" + fill + "'" +
+                " BorderBrush='" + edge + "' BorderThickness='1' Padding='10,8'>" +
                 "<ContentPresenter VerticalAlignment='Center'/>" +
                 "</Border>" +
                 "<ControlTemplate.Triggers>" +

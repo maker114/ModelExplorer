@@ -5,7 +5,7 @@
     <RootNamespace>ModelExplorer.Tests</RootNamespace>
     <AssemblyName>ModelExplorer.Tests</AssemblyName>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>3.4.2</Version>
+    <Version>3.4.3</Version>
   </PropertyGroup>
 
   <!--

@@ -41,7 +41,8 @@ namespace ModelExplorer
         private TextBox _bambuPathBox;
         private TextBox _solidWorksPathBox;
         private ChoiceGroup _themeChoices;
-        private ChoiceGroup _fontSizeChoices;
+        private Slider _fontSizeSlider;
+        private TextBlock _fontSizeValue;
         private ChoiceGroup _stlUnitsChoices;
         private ChoiceGroup _stlQualityChoices;
         private ToggleSwitch _binaryStlSwitch;
@@ -289,13 +290,16 @@ namespace ModelExplorer
             BuildBackgroundCard(page, theme);
 
             Card fontCard = NewCard(page, Icons.Letter, "字体大小", theme);
-            _fontSizeChoices = NewChoiceGroup(
-                fontCard.Body,
-                theme,
-                4,
-                GetFontSizeChoices(),
-                _source.FontSize.ToString(),
-                false);
+            _fontSizeSlider = MakeSlider(9, 16);
+            _fontSizeSlider.Value = _source.FontSize;
+            _fontSizeValue = MakeValueLabel(theme);
+            _fontSizeSlider.ValueChanged += delegate
+            {
+                _fontSizeValue.Text = ((int)Math.Round(_fontSizeSlider.Value)).ToString();
+            };
+            AddSliderRow(fontCard.Body, "字号", _fontSizeSlider, _fontSizeValue, theme);
+            AddHint(fontCard.Body, "主界面与侧栏的字号按这个值整体缩放（保存后生效）。", theme);
+            _fontSizeValue.Text = ((int)Math.Round(_fontSizeSlider.Value)).ToString();
         }
 
         /// <summary>外部程序：Bambu Studio 与 SolidWorks 的路径。</summary>
@@ -758,16 +762,6 @@ namespace ModelExplorer
             return names;
         }
 
-        private static string[] GetFontSizeChoices()
-        {
-            string[] sizes = new string[8];
-            for (int i = 0; i < sizes.Length; i++)
-            {
-                sizes[i] = (9 + i).ToString();
-            }
-            return sizes;
-        }
-
         // ------------------------------------------------------------------ 预览与保存
 
         /// <summary>毛玻璃两个滑杆的实时预览：改的是全局主题画刷与背景层，不写配置。</summary>
@@ -955,8 +949,8 @@ namespace ModelExplorer
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            int fontSize = AppConfig.DefaultFontSize;
-            int.TryParse(_fontSizeChoices.SelectedValue, out fontSize);
+            // 滑杆范围就是 9～16，取整后即为合法字号
+            int fontSize = (int)Math.Round(_fontSizeSlider.Value);
 
             Result = new AppConfig
             {
