@@ -115,10 +115,11 @@ namespace ModelExplorer
         /// 留出余量：实测最终背景峰值落在 61 左右，对比度 5.1:1。
         /// 面板上的文字比这更宽松（面板还会再压一层），所以满足这一条，面板必然也满足。
         /// </summary>
-        private const double ReadablePeak = 56;
+        private const double ReadablePeak = 62;
 
-        /// <summary>取分位而不是最大值：极少数镜面高光不该把整张壁纸拖黑。</summary>
-        private const double ReadablePercentile = 0.995;
+        /// <summary>取分位而不是最大值：极少数镜面高光不该把整张壁纸拖黑。
+        /// V3.5.1 由 0.995 放宽到 0.997：极光增强后最亮的几个百分点不该被当作异常高光压掉。</summary>
+        private const double ReadablePercentile = 0.997;
 
         private static readonly object CacheLock = new object();
         private static string _cachedPath;
@@ -225,15 +226,19 @@ namespace ModelExplorer
                 return;
             }
 
-            dc.DrawRectangle(MakeBlob(Colors.White, new Point(0.20, -0.10), 0.90, 0.80, 0.055), null, bounds);
-            dc.DrawRectangle(MakeBlob(Colors.White, new Point(0.88, 1.08), 0.85, 0.75, 0.045), null, bounds);
-            dc.DrawRectangle(MakeBlob(theme.AuroraPrimary, new Point(0.22, 0.04), 0.62, 0.50, 0.055), null, bounds);
-            dc.DrawRectangle(MakeBlob(theme.AuroraSecondary, new Point(0.92, 0.62), 0.60, 0.60, 0.055), null, bounds);
-            dc.DrawRectangle(MakeBlob(theme.AuroraTertiary, new Point(0.58, 1.05), 0.58, 0.45, 0.045), null, bounds);
+            // V3.5.1：极光强度整体提高。原来光斑 alpha 只有 0.045～0.055、光带 0.05～0.07，
+            // 叠在本来就接近纯黑的底色上，烘焙出图的亮度范围只有 13～42（差 29 级），
+            // 几乎看不出渐变。现在光斑提到 0.16～0.24、光带提到 0.10～0.14，
+            // 并让最亮的白色光斑落在左上、主题色光斑铺开，形成明显的斜向渐变。
+            dc.DrawRectangle(MakeBlob(Colors.White, new Point(0.18, -0.08), 0.95, 0.85, 0.22), null, bounds);
+            dc.DrawRectangle(MakeBlob(Colors.White, new Point(0.90, 1.10), 0.90, 0.78, 0.16), null, bounds);
+            dc.DrawRectangle(MakeBlob(theme.AuroraPrimary, new Point(0.20, 0.06), 0.68, 0.56, 0.24), null, bounds);
+            dc.DrawRectangle(MakeBlob(theme.AuroraSecondary, new Point(0.94, 0.60), 0.66, 0.64, 0.22), null, bounds);
+            dc.DrawRectangle(MakeBlob(theme.AuroraTertiary, new Point(0.56, 1.06), 0.64, 0.50, 0.18), null, bounds);
 
-            DrawRibbon(dc, bounds, theme.AuroraPrimary, 0.07, -22, 0.24);
-            DrawRibbon(dc, bounds, Colors.White, 0.05, -22, 0.52);
-            DrawRibbon(dc, bounds, theme.AuroraSecondary, 0.06, -22, 0.80);
+            DrawRibbon(dc, bounds, theme.AuroraPrimary, 0.13, -22, 0.24);
+            DrawRibbon(dc, bounds, Colors.White, 0.10, -22, 0.52);
+            DrawRibbon(dc, bounds, theme.AuroraSecondary, 0.12, -22, 0.80);
         }
 
         private static Brush MakeBlob(Color color, Point center, double radiusX, double radiusY, double alpha)
