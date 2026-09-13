@@ -3,7 +3,7 @@
 > 面向 3D 打印工作流的 SolidWorks 模型工作台：扫描工程目录、一键导出 STL、
 > 直接在 Bambu Studio 里出 3MF，并顺手把散落的 STL / 3MF 与工程名整理干净。
 
-**当前版本：V3.5.2** ｜ Windows 10/11 ｜ .NET Framework 4.8 ｜ WPF
+**当前版本：V3.6.0** ｜ Windows 10/11 ｜ .NET Framework 4.8 ｜ WPF
 
 ---
 
@@ -104,7 +104,7 @@ powershell -ExecutionPolicy Bypass -File .\publish.ps1
 | `ModelExplorer/` | WPF 主程序（界面、主题、毛玻璃、对话框） |
 | `ModelExplorerCli/` | 命令行转换工具 |
 | `ModelExplorerAddin/` | SolidWorks 2022 插件（在 SolidWorks 里直接「导出到 Bambu」） |
-| `ModelExplorer.Tests/` | 测试套件（**146 项**，无外部依赖，离线可跑） |
+| `ModelExplorer.Tests/` | 测试套件（**148 项**，无外部依赖，离线可跑） |
 | `lib/SolidWorks/` | SolidWorks Interop 程序集的唯一来源（换 SolidWorks 版本只替换这里） |
 | `build.ps1` / `publish.ps1` / `prune-dist.ps1` | 构建、打包、清理旧版本 |
 | `Directory.Build.props` | 全仓库统一的构建配置（目标框架、平台、Interop 路径） |

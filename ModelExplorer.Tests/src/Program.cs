@@ -326,14 +326,14 @@ namespace ModelExplorer.Tests
             CheckTrue("旧配置仍启用毛玻璃", legacy.UseGlass);
             CheckEqual("旧配置的玻璃强度取默认档", AppConfig.DefaultGlassStrength, legacy.GlassStrengthValue);
             CheckTrue("默认配置启用毛玻璃", defaults.UseGlass);
-            CheckEqual("默认玻璃强度为标准档", 1, defaults.GlassStrengthValue);
+            CheckEqual("默认玻璃强度为轻柔档", AppConfig.DefaultGlassStrength, defaults.GlassStrengthValue);
 
             AppConfig glassOff = serializer.Deserialize<AppConfig>("{\"Glass\":false}");
             CheckFalse("显式 false 时关闭毛玻璃", glassOff.UseGlass);
 
             AppConfig glassRoundTrip = serializer.Deserialize<AppConfig>(serializer.Serialize(defaults));
             CheckTrue("毛玻璃开关可持久化", glassRoundTrip.UseGlass);
-            CheckEqual("毛玻璃强度可持久化", 1, glassRoundTrip.GlassStrengthValue);
+            CheckEqual("毛玻璃强度可持久化", AppConfig.DefaultGlassStrength, glassRoundTrip.GlassStrengthValue);
 
             AppConfig strengthLow = serializer.Deserialize<AppConfig>("{\"GlassStrength\":0}");
             CheckEqual("强度 0（轻柔）不被当成缺省值", 0, strengthLow.GlassStrengthValue);
@@ -370,10 +370,20 @@ namespace ModelExplorer.Tests
             CheckEqual("背景图适配方式可持久化", "cover", backgroundRoundTrip.BackgroundFitValue);
 
             // V3.4.0：模糊 / 透明度两个滑杆取代三档强度，旧配置必须换算成同一观感
-            CheckEqual("旧配置缺新字段时按旧档位换算模糊", 40, legacy.GlassBlurValue);
-            CheckEqual("旧配置缺新字段时按旧档位换算透明度", 26, legacy.GlassOpacityValue);
+            // V3.6.0：默认值随作者的常用设置调整（字号 14、模糊 3、透明度 72）。
+            //         两条路径要分清：
+            //           · 全新配置走 CreateDefault，直接用新默认值；
+            //           · 历史上带过 GlassStrength 的配置走旧档位换算表，观感保持不变
+            //             （否则老配置会被升级二次改外观），所以这里断言的是换算表的值。
             CheckEqual("默认配置的毛玻璃模糊", AppConfig.DefaultGlassBlur, defaults.GlassBlurValue);
             CheckEqual("默认配置的毛玻璃透明度", AppConfig.DefaultGlassOpacity, defaults.GlassOpacityValue);
+            CheckEqual("默认配置的字号", AppConfig.DefaultFontSize, defaults.FontSize);
+            CheckTrue("默认开启毛玻璃", defaults.UseGlass);
+
+            AppConfig legacyNoStrength = serializer.Deserialize<AppConfig>(
+                "{\"LastDir\":\"D:\\\\model\",\"FontSize\":14}");
+            CheckEqual("没有强度字段的老配置按轻柔档换算模糊", 26, legacyNoStrength.GlassBlurValue);
+            CheckEqual("没有强度字段的老配置按轻柔档换算透明度", 14, legacyNoStrength.GlassOpacityValue);
 
             AppConfig sliders = serializer.Deserialize<AppConfig>("{\"GlassBlur\":12,\"GlassOpacity\":55}");
             CheckEqual("毛玻璃模糊可持久化", 12, sliders.GlassBlurValue);
@@ -400,7 +410,7 @@ namespace ModelExplorer.Tests
                 "{\"BackgroundImage\":\"x.png\",\"BackgroundBlur\":14}");
             CheckEqual("没有 GlassBlur 时沿用 3.3.0 的壁纸模糊", 14, fromWallpaper.GlassBlurValue);
             AppConfig noImageNoBlur = serializer.Deserialize<AppConfig>("{\"BackgroundBlur\":14}");
-            CheckEqual("没设背景图时不沿用壁纸模糊", 40, noImageNoBlur.GlassBlurValue);
+            CheckEqual("没设背景图时不沿用壁纸模糊", 26, noImageNoBlur.GlassBlurValue);
         }
 
         // ---------------------------------------------------------------- 主界面图标

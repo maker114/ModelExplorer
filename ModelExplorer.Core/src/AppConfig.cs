@@ -93,13 +93,35 @@ namespace ModelExplorer
         public string SolidWorksPath { get; set; }
 
         public const string DefaultTheme = "丹砂";
-        public const int DefaultFontSize = 12;
+
+        /// <summary>默认字号。V3.6.0 按作者常用设置由 12 提到 14。</summary>
+        public const int DefaultFontSize = 14;
         public const string DefaultStlUnits = "mm";
         public const string DefaultStlQuality = "Fine";
-        public const int DefaultGlassStrength = 1;
-        public const int DefaultGlassBlur = 40;
-        public const int DefaultGlassOpacity = 26;
-        public const int MaxGlassBlur = 60;
+
+        /// <summary>
+        /// 旧的「三档强度」默认值。3.4.0 起界面改成两个滑杆，这个字段只用于迁移：
+        /// 老配置若连 GlassBlur / GlassOpacity 都没有，就按这一档（轻柔）换算成
+        /// 26 px / 14 %——那是 V3.4.0 时「轻柔档」的实际观感，保持不变，
+        /// 免得已经升级过一次的老配置再被改一次外观。
+        ///
+        /// 注意：它**不等于** <see cref="DefaultGlassBlur"/> / <see cref="DefaultGlassOpacity"/>。
+        /// 全新建的配置走 <see cref="CreateDefault"/> 直接用新默认值（3 px / 72 %）；
+        /// 只有历史上真的带过强度字段的配置才走这条换算。
+        /// </summary>
+        public const int DefaultGlassStrength = 0;
+
+        /// <summary>
+        /// 默认毛玻璃模糊（像素）。V3.6.0 按作者常用设置由 40 降到 3——
+        /// 极光本身是烘焙时糊过的，再叠一层重模糊只会让渐变发灰。
+        /// 上限一并由 60 收到 40（这台机器上从来用不到更高）。
+        /// </summary>
+        public const int DefaultGlassBlur = 3;
+        public const int MaxGlassBlur = 40;
+
+        /// <summary>默认毛玻璃透明度（百分比）。V3.6.0 按作者常用设置由 26 提到 72。</summary>
+        public const int DefaultGlassOpacity = 72;
+
         public const string DefaultBackgroundFit = "cover";
         public const int DefaultBackgroundBlur = 8;
         public const int DefaultBackgroundDarken = 50;
