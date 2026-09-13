@@ -5,6 +5,8 @@
 
 **当前版本：V3.6.0** ｜ Windows 10/11 ｜ .NET Framework 4.8 ｜ WPF
 
+仓库地址：<https://github.com/maker114/ModelExplorer>
+
 ---
 
 ## 它解决什么问题
