@@ -202,7 +202,7 @@ namespace ModelExplorer
             rows.Children.Add(BuildTableHeader(theme));
             for (int i = 0; i < _changes.Count; i++)
             {
-                rows.Children.Add(BuildChangeRow(_changes[i], i, theme));
+                rows.Children.Add(BuildChangeRow(_changes[i], i, _changes.Count, theme));
             }
             scroll.Content = rows;
             Grid.SetRow(scroll, 3);
@@ -244,9 +244,9 @@ namespace ModelExplorer
             return border;
         }
 
-        private Border BuildChangeRow(ProjectNameChange change, int index, AppTheme theme)
+        private Border BuildChangeRow(ProjectNameChange change, int index, int total, AppTheme theme)
         {
-            Border border = CreateRowBorder(theme, false);
+            Border border = CreateRowBorder(theme, false, index == total - 1);
             Grid grid = CreateRowGrid();
 
             CheckBox checkBox = new CheckBox
@@ -283,15 +283,29 @@ namespace ModelExplorer
             return grid;
         }
 
-        private static Border CreateRowBorder(AppTheme theme, bool header)
+        /// <summary>行与行之间的细分隔线。固定深灰而不是主题边框色：它只用来分行，
+        /// 不该和整张表的外轮廓（表头的主题色描边）抢注意力。</summary>
+        private static readonly Brush RowSeparatorBrush =
+            new SolidColorBrush(Color.FromRgb(0x24, 0x24, 0x24));
+
+        private static Border CreateRowBorder(AppTheme theme, bool header, bool last = false)
         {
-            // 列表用不透明面板色：这是一屏密集文字，让壁纸透上来只会更难读
+            // 列表用不透明面板色：这是一屏密集文字，让壁纸透上来只会更难读。
+            //
+            // 圆角与描边只给整张表的**外轮廓**：表头圆上两角，末行圆下两角，中间各行的
+            // 左右两角与左右描边都不画。V3.4.4 及更早是每行独立圆角（6px）且四边描边，
+            // 行与行紧贴时，左侧每行都缺一小块、描边又一截一截地断开，整条左边缘因此
+            // 呈锯齿状（用户反馈的“锯齿内容”）。现在整张表看起来是一整块面，左边缘一笔直下。
             Border border = new Border
             {
                 Background = header ? theme.OpaquePanelActiveBrush : theme.OpaquePanelBrush,
-                BorderBrush = header ? theme.BorderBrush : new SolidColorBrush(Color.FromRgb(0x24, 0x24, 0x24)),
-                BorderThickness = new Thickness(1, 1, 1, header ? 1 : 0),
-                CornerRadius = new CornerRadius(6),
+                BorderBrush = header ? theme.BorderBrush : RowSeparatorBrush,
+                BorderThickness = header
+                    ? new Thickness(1, 1, 1, 1)
+                    : new Thickness(0, 1, 0, last ? 1 : 0),
+                CornerRadius = header
+                    ? new CornerRadius(6, 6, last ? 6 : 0, last ? 6 : 0)
+                    : new CornerRadius(0, 0, last ? 6 : 0, last ? 6 : 0),
                 Padding = new Thickness(8, 5, 8, 5),
                 Margin = new Thickness(0, 0, 0, header ? 6 : 0)
             };
